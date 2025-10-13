@@ -57,7 +57,7 @@ const Index = () => {
       const { data: imageData, error: imageError } = await supabase.functions.invoke(
         "generate-image",
         {
-          body: { 
+          body: {
             prompt: analysisData.imagePrompt,
             handle: handle.trim().replace("@", "")
           },
@@ -326,12 +326,12 @@ const Index = () => {
             )}
 
             {/* Footer */}
-            <footer className="text-center space-y-2 pt-8">
-              <div className="text-sm text-muted-foreground">
-                <p>Powered by Grok-4-Fast and Gemini Nano Banana</p>
+            <footer className="text-center space-y-2 pt-8 pb-6">
+              <div className="text-sm text-muted-foreground space-y-1.5">
+                <p className="font-medium tracking-wide">Powered by Grok-4-Fast and Gemini Nano Banana</p>
                 <p>
                   API costs covered by{" "}
-                  <a href="https://x.com/lamps_apple" target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline">@lamps_apple</a>
+                  <a href="https://x.com/lamps_apple" target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline font-medium transition-colors">@lamps_apple</a>
                 </p>
               </div>
             </footer>
