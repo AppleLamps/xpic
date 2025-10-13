@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, FileImage, Image as ImageIcon, AlertCircle, Sparkles, Download, Heart, Coffee, DollarSign } from "lucide-react";
+import { Loader2, Image as ImageIcon, AlertCircle, Sparkles, Download, Heart, Coffee, DollarSign, Palette, Copy, Check, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -21,6 +21,7 @@ const Index = () => {
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ imagePrompt: string; imageUrl: string } | null>(null);
   const [donateOpen, setDonateOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const handleGenerate = async () => {
     if (!handle.trim()) {
@@ -98,209 +99,213 @@ const Index = () => {
     }
   };
 
+  const handleCopyPrompt = async () => {
+    if (!result?.imagePrompt) return;
+
+    try {
+      await navigator.clipboard.writeText(result.imagePrompt);
+      setIsCopied(true);
+      toast.success("Prompt copied to clipboard!");
+
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setIsCopied(false);
+      }, 2000);
+    } catch (error) {
+      console.error("Copy error:", error);
+      toast.error("Failed to copy prompt");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-background-secondary py-12 px-4">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary shadow-lg mb-4">
-            <FileImage className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold text-foreground">X Account Image Generator</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Generate AI-powered images based on X account analysis
-          </p>
-        </div>
-
-        {/* Donation Section */}
-        <div className="text-center space-y-3 animate-fade-in">
-          <div>
-            <Dialog open={donateOpen} onOpenChange={setDonateOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0 hover:opacity-90 transition-opacity shadow-lg"
-                >
-                  <Heart className="w-4 h-4 mr-2 fill-current" />
-                  Donate
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2 text-2xl">
-                    <Heart className="w-6 h-6 text-rose-500 fill-current" />
-                    Support This Project
-                  </DialogTitle>
-                  <DialogDescription className="text-base pt-2">
-                    All donated funds will be used to cover API costs. Thank you! 🙏
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-3 pt-4">
-                  {/* Buy Me a Coffee Option */}
-                  <a
-                    href="https://buymeacoffee.com/applelampsg"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    <Button
-                      className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:opacity-90 text-white border-0 h-14 text-base"
-                      onClick={() => setDonateOpen(false)}
-                    >
-                      <Coffee className="w-5 h-5 mr-2" />
-                      Buy Me a Coffee
-                    </Button>
-                  </a>
-
-                  {/* CashApp Option */}
-                  <a
-                    href="https://cash.app/$applelamps"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    <Button
-                      className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90 text-white border-0 h-14 text-base"
-                      onClick={() => setDonateOpen(false)}
-                    >
-                      <DollarSign className="w-5 h-5 mr-2" />
-                      CashApp: $applelamps
-                    </Button>
-                  </a>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            All donated funds will be used to cover API costs, thank you!
-          </p>
-        </div>
-
-        {/* Input Section */}
-        <Card className="shadow-xl border-0 animate-scale-in">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              Enter X Handle
-            </CardTitle>
-            <CardDescription>
-              Enter an X (Twitter) username to generate a unique image
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  @
-                </span>
-                <Input
-                  placeholder="elonmusk"
-                  value={handle}
-                  onChange={(e) => setHandle(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !isLoading && handleGenerate()}
-                  disabled={isLoading}
-                  className="pl-8"
-                />
-              </div>
-              <Button
-                onClick={handleGenerate}
-                disabled={isLoading || !handle.trim()}
-                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <ImageIcon className="w-4 h-4 mr-2" />
-                    Generate Image
-                  </>
-                )}
-              </Button>
+    <div className="relative min-h-screen w-full overflow-hidden">
+      <div className="aurora-background"></div>
+      <main className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
+        <div className="max-w-4xl w-full mx-auto space-y-12">
+          {/* Header */}
+          <div className="text-center space-y-4 animate-fade-in">
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-slate-200/60 via-slate-100/50 to-slate-200/60 backdrop-blur-xl border border-slate-300/50 shadow-2xl mb-4">
+              <Zap className="w-12 h-12 text-slate-700 drop-shadow-sm" />
             </div>
+            <h1 className="text-5xl md:text-7xl font-serif font-black tracking-tight title-glow pb-2">
+              𝕏-pressionist
+            </h1>
+            <p className="text-xl md:text-2xl text-foreground/70 max-w-2xl mx-auto font-medium">
+              Your 𝕏 profile, visualized by AI
+            </p>
 
-            {error && (
-              <Alert variant="destructive" className="animate-fade-in">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
+            {/* Support API Costs Button */}
+            <div className="pt-2">
+              <Dialog open={donateOpen} onOpenChange={setDonateOpen}>
+                <DialogTrigger asChild>
+                  <Button className="support-button">
+                    <span aria-hidden className="support-sparkle" />
+                    <Heart className="w-4 h-4 mr-2 fill-current" />
+                    Support API Costs
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md dialog-glass">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-2xl text-foreground">
+                      <Heart className="w-6 h-6 text-rose-500 fill-current" />
+                      Support This Project
+                    </DialogTitle>
+                    <DialogDescription className="text-base pt-2 text-muted-foreground">
+                      All donated funds will be used to cover API costs. Thank you — truly appreciated.
+                    </DialogDescription>
+                  </DialogHeader>
 
-        {/* Powered By Section */}
-        <div className="text-center space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Powered by Grok-4-Fast and Gemini Nano Banana
-          </p>
-          <p className="text-sm text-muted-foreground">
-            API costs covered by{" "}
-            <a
-              href="https://x.com/lamps_apple"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              @lamps_apple
-            </a>
-          </p>
-        </div>
+                  <div className="space-y-3 pt-4">
+                    <a href="https://buymeacoffee.com/applelampsg" target="_blank" rel="noopener noreferrer" className="block">
+                      <Button className="w-full h-14 text-base bg-primary/90 hover:bg-primary text-primary-foreground border border-white/10" onClick={() => setDonateOpen(false)}>
+                        <Coffee className="w-5 h-5 mr-2" />
+                        Buy Me a Coffee
+                      </Button>
+                    </a>
 
-        {/* Results Section */}
-        {result && (
-          <Card id="results" className="shadow-xl border-0 animate-fade-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ImageIcon className="w-5 h-5 text-primary" />
-                Generated Image
+                    <a href="https://cash.app/$applelamps" target="_blank" rel="noopener noreferrer" className="block">
+                      <Button className="w-full h-14 text-base bg-secondary/90 hover:bg-secondary text-secondary-foreground border border-white/10" onClick={() => setDonateOpen(false)}>
+                        <DollarSign className="w-5 h-5 mr-2" />
+                        CashApp: $applelamps
+                      </Button>
+                    </a>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+
+          {/* Input Section */}
+          <Card className="glass-card shadow-2xl animate-scale-in w-full max-w-3xl mx-auto">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Sparkles className="w-5 h-5 text-primary" />
+                Enter X Handle
               </CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Enter an X (Twitter) username to generate a unique image.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Prompt Display */}
-              <div className="p-4 bg-muted border-l-4 border-primary rounded-lg">
-                <p className="text-sm text-muted-foreground mb-1">🎨 Prompt:</p>
-                <p className="text-sm italic text-foreground">{result.imagePrompt}</p>
-              </div>
-
-              {/* Image Display */}
-              <div className="space-y-4">
-                <div className="flex justify-center">
-                  <img
-                    src={result.imageUrl}
-                    alt="Generated from X account analysis"
-                    className="max-w-full h-auto rounded-lg shadow-2xl"
-                    onError={(e) => {
-                      console.error("Image failed to load:", result.imageUrl);
-                      e.currentTarget.style.display = "none";
-                      e.currentTarget.parentElement!.innerHTML = `
-                        <div class="p-8 bg-destructive/10 border border-destructive rounded-lg text-center">
-                          <p class="text-destructive">Failed to load image</p>
-                          <p class="text-sm text-muted-foreground mt-2">The image URL may be invalid or expired</p>
-                        </div>
-                      `;
-                    }}
+            <CardContent className="space-y-4 pt-2 pb-8 px-8">
+              <div className="flex flex-col sm:flex-row gap-3 items-center max-w-3xl mx-auto">
+                <div className="flex-1 relative w-full">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                    @
+                  </span>
+                  <Input
+                    placeholder="elonmusk"
+                    value={handle}
+                    onChange={(e) => setHandle(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !isLoading && handleGenerate()}
+                    disabled={isLoading}
+                    className="pl-8 !text-base sm:!text-sm"
                   />
                 </div>
-
-                {/* Download Button */}
-                <div className="flex justify-center">
-                  <Button
-                    onClick={handleDownload}
-                    className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download Image
-                  </Button>
-                </div>
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isLoading || !handle.trim()}
+                  size="lg"
+                  className="generate-button bg-gradient-to-r from-slate-700 to-slate-600 text-white font-semibold hover:from-slate-600 hover:to-slate-500 hover:scale-[1.02] hover:shadow-xl transition-all duration-300 shadow-lg"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-5 h-5 mr-2" />
+                      Generate Image
+                    </>
+                  )}
+                </Button>
               </div>
+
+              {error && (
+                <Alert variant="destructive" className="animate-fade-in bg-destructive/10">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
-        )}
-      </div>
+
+          {/* Results Section */}
+              {result && (
+            <Card id="results" className="glass-card shadow-2xl animate-fade-in w-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-foreground">
+                  <ImageIcon className="w-5 h-5 text-primary" />
+                  Generated Image
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                    <div className="p-4 bg-gradient-to-br from-slate-700/8 via-slate-600/5 to-slate-700/8 border border-white/20 rounded-lg shadow-[inset_0_2px_8px_rgba(0,0,0,0.15),0_4px_12px_rgba(0,0,0,0.15)] backdrop-blur-sm">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm text-muted-foreground inline-flex items-center gap-2">
+                          <Palette className="w-4 h-4" />
+                          Prompt
+                        </p>
+                        <Button
+                          onClick={handleCopyPrompt}
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 px-2 hover:bg-white/10 transition-colors"
+                        >
+                          {isCopied ? (
+                            <>
+                              <Check className="w-4 h-4 mr-1 text-green-500" />
+                              <span className="text-xs text-green-500">Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4 mr-1" />
+                              <span className="text-xs">Copy</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-sm italic text-foreground">{result.imagePrompt}</p>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex justify-center p-2 border border-white/20 rounded-lg bg-black/10">
+                    <img
+                      src={result.imageUrl}
+                      alt="Generated from X account analysis"
+                      className="max-w-full h-auto rounded-md shadow-2xl"
+                      onError={(e) => {
+                        console.error("Image failed to load:", result.imageUrl);
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={handleDownload}
+                      size="lg"
+                      className="bg-gradient-to-r from-slate-700 to-slate-600 text-white font-semibold hover:from-slate-600 hover:to-slate-500 hover:scale-[1.02] hover:shadow-xl transition-all duration-300 shadow-lg"
+                    >
+                      <Download className="w-5 h-5 mr-2" />
+                      Download Image
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Footer */}
+          <footer className="text-center space-y-2 pt-8">
+            <div className="text-sm text-muted-foreground">
+              <p>Powered by Grok-4-Fast and Gemini Nano Banana</p>
+              <p>
+                API costs covered by{" "}
+                <a href="https://x.com/lamps_apple" target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline">@lamps_apple</a>
+              </p>
+            </div>
+          </footer>
+        </div>
+      </main>
     </div>
   );
 };
