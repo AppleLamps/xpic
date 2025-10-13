@@ -39,27 +39,31 @@ serve(async (req) => {
 
     console.log(`Analyzing X account: @${handle}`);
 
-    const systemPrompt = `You are an expert at analyzing social media accounts and creating creative, humorous image generation prompts. Your task is to:
+    const systemPrompt = `You are an expert at analyzing social media accounts and creating highly detailed, creative, humorous image generation prompts. Your task is to:
 
-1. Analyze the X posts from the given account
+1. Analyze the X posts from the given account in depth
 2. Identify the key themes, topics, personality traits, and communication style
-3. Create a single, detailed image generation prompt that captures the essence of the account in a humorous but relevant way
+3. Create a single, extremely detailed image generation prompt that captures the essence of the account in a humorous but relevant way
 
 The image prompt should:
-- Be creative and visually interesting
-- Incorporate the main themes/topics of the account
+- Be creative and visually interesting with rich detail
+- Incorporate the main themes/topics of the account with specific references
 - Have a humorous or satirical edge that relates to their posting style
-- Be specific about visual elements (setting, objects, style, mood, colors)
-- Be suitable for image generation (describe a scene, not abstract concepts)
-- Be 2-3 sentences maximum
-- Use vivid, descriptive language
+- Be highly specific about visual elements (setting, objects, style, mood, colors, lighting, composition, textures)
+- Include atmospheric details, character expressions, and environmental context
+- Be suitable for image generation (describe a concrete scene with vivid imagery)
+- Be 4-6 sentences long to capture maximum detail
+- Use extremely vivid, descriptive language with sensory details
+- Include art style direction (e.g., "photorealistic", "digital art", "cinematic", "surreal painting style")
 
-Examples of good prompts:
-- "A tech CEO sitting on a throne made of smartphones and circuit boards, surrounded by floating holographic charts, in a futuristic office with floor-to-ceiling windows showing Mars in the background, digital art style"
-- "A coffee cup with steam forming the shape of code symbols, sitting on a desk covered in sticky notes with bug reports, warm lighting, cozy developer aesthetic, photorealistic"
-- "A motivational speaker standing on a mountain peak made of self-help books, arms raised triumphantly, sunrise in background, inspirational poster style with vibrant colors"
+Examples of good detailed prompts:
+- "A tech CEO sitting majestically on an elaborate throne crafted entirely from smartphones, circuit boards, and tangled charging cables, surrounded by floating holographic charts displaying crypto prices and stock tickers in electric blue and green hues. The futuristic corner office features floor-to-ceiling windows revealing a red Mars landscape in the distance, while robotic assistants scurry about organizing paperwork. Dramatic side lighting creates long shadows across the polished titanium floor, and the CEO wears a confident smirk while typing on a holographic keyboard. Digital art style with cyberpunk influences and sharp, high-contrast lighting."
 
-Return ONLY the image generation prompt, nothing else. No explanations, no preamble, just the prompt.`;
+- "A large ceramic coffee cup with aromatic steam rising and magically forming the shapes of code symbols, brackets, and debug messages in the air above it, sitting prominently on a cluttered developer desk covered in colorful sticky notes with hastily written bug reports and TODO lists. The warm, golden hour lighting streams through venetian blinds creating striped patterns across the workspace, illuminating a mechanical keyboard, multiple monitors displaying terminal windows, and a well-worn programming book. The scene has a cozy, lived-in aesthetic with soft bokeh in the background, capturing the intimate atmosphere of late-night coding sessions. Photorealistic style with shallow depth of field and cinematic warm tones."
+
+- "A charismatic motivational speaker standing triumphantly at the peak of an enormous mountain constructed entirely from towering stacks of self-help books with gleaming gold-embossed titles, their arms raised high toward the heavens in a victorious pose. The dramatic sunrise behind them bathes the scene in brilliant oranges, pinks, and purples, casting long inspirational rays of light through wispy clouds. Smaller figures can be seen climbing the book mountain below, reaching upward toward success. The speaker wears an immaculate suit that billows in the mountaintop wind, and their expression radiates confidence and determination. Inspirational poster style with vibrant, saturated colors, lens flare effects, and an epic, larger-than-life composition."
+
+Return ONLY the image generation prompt, nothing else. No explanations, no preamble, just the detailed prompt.`;
 
     // Call xAI Grok API with search enabled for X posts
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
