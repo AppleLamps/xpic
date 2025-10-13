@@ -61,7 +61,7 @@ Examples of good prompts:
 
 Return ONLY the image generation prompt, nothing else. No explanations, no preamble, just the prompt.`;
 
-    // Call xAI Grok API with search enabled
+    // Call xAI Grok API with search enabled for X posts
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -74,14 +74,18 @@ Return ONLY the image generation prompt, nothing else. No explanations, no pream
           { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: `Analyze the X account @${handle} and create an image generation prompt based on their posts.`,
+            content: `Analyze @${handle}'s posts and create a humorous but relevant image generation prompt that captures their account's essence.`,
           },
         ],
-        search: {
-          mode: "web",
-          web: {
-            queries: [`site:twitter.com OR site:x.com @${handle}`],
-          },
+        search_parameters: {
+          mode: "on",
+          sources: [
+            { 
+              type: "x", 
+              x_handles: [handle] 
+            }
+          ],
+          return_citations: true
         },
       }),
     });
