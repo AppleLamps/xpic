@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,9 +25,22 @@ const Index = () => {
   const [result, setResult] = useState<{ imagePrompt: string; imageUrl: string } | null>(null);
   const [donateOpen, setDonateOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [currentDonorIndex, setCurrentDonorIndex] = useState(0);
+
+  // Donors list
+  const donors = ["F0XYOU", "RazorRuckus"];
 
   // Prompt history hook
   const { history, addToHistory, deleteFromHistory, clearHistory } = usePromptHistory();
+
+  // Rotate donor username every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentDonorIndex((prevIndex) => (prevIndex + 1) % donors.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [donors.length]);
 
   const handleGenerate = async () => {
     if (!handle.trim()) {
@@ -250,6 +263,14 @@ const Index = () => {
                       </>
                     )}
                   </Button>
+                </div>
+
+                {/* API Costs Tamed By */}
+                <div className="text-center pt-2">
+                  <p className="text-sm text-muted-foreground inline-flex items-center justify-center gap-1">
+                    <span>API costs tamed by:</span>
+                    <span className="font-semibold text-foreground inline-block min-w-[110px] text-left">@{donors[currentDonorIndex]}</span>
+                  </p>
                 </div>
 
                 {error && (
