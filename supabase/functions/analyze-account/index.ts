@@ -160,7 +160,8 @@ Your final output must be ONLY the image generation prompt. No preamble, no expl
                 x_handles: [handle] 
               }
             ],
-            return_citations: true
+            return_citations: true,
+            max_search_results: 10
           },
         }),
       });
