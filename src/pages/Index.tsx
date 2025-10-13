@@ -3,15 +3,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, FileImage, Image as ImageIcon, AlertCircle, Sparkles, Download } from "lucide-react";
+import { Loader2, FileImage, Image as ImageIcon, AlertCircle, Sparkles, Download, Heart, Coffee, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Index = () => {
   const [handle, setHandle] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ imagePrompt: string; imageUrl: string } | null>(null);
+  const [donateOpen, setDonateOpen] = useState(false);
 
   const handleGenerate = async () => {
     if (!handle.trim()) {
@@ -101,19 +110,71 @@ const Index = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Generate AI-powered images based on X account analysis
           </p>
-          <p className="text-sm text-muted-foreground">
-            Powered by Grok-4-Fast and Gemini Nano Banana
-          </p>
-          <p className="text-sm text-muted-foreground">
-            API costs covered by{" "}
-            <a
-              href="https://x.com/lamps_apple"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              @lamps_apple
-            </a>
+        </div>
+
+        {/* Donation Section */}
+        <div className="text-center space-y-3 animate-fade-in">
+          <div>
+            <Dialog open={donateOpen} onOpenChange={setDonateOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="bg-gradient-to-r from-pink-500 to-rose-500 text-white border-0 hover:opacity-90 transition-opacity shadow-lg"
+                >
+                  <Heart className="w-4 h-4 mr-2 fill-current" />
+                  Donate
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-2xl">
+                    <Heart className="w-6 h-6 text-rose-500 fill-current" />
+                    Support This Project
+                  </DialogTitle>
+                  <DialogDescription className="text-base pt-2">
+                    All donated funds will be used to cover API costs. Thank you! 🙏
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-3 pt-4">
+                  {/* Buy Me a Coffee Option */}
+                  <a
+                    href="https://buymeacoffee.com/applelampsg"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <Button
+                      className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:opacity-90 text-white border-0 h-14 text-base"
+                      onClick={() => setDonateOpen(false)}
+                    >
+                      <Coffee className="w-5 h-5 mr-2" />
+                      Buy Me a Coffee
+                    </Button>
+                  </a>
+
+                  {/* CashApp Option */}
+                  <a
+                    href="https://cash.app/$applelamps"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <Button
+                      className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90 text-white border-0 h-14 text-base"
+                      onClick={() => setDonateOpen(false)}
+                    >
+                      <DollarSign className="w-5 h-5 mr-2" />
+                      CashApp: $applelamps
+                    </Button>
+                  </a>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            All donated funds will be used to cover API costs, thank you!
           </p>
         </div>
 
@@ -170,6 +231,24 @@ const Index = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Powered By Section */}
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Powered by Grok-4-Fast and Gemini Nano Banana
+          </p>
+          <p className="text-sm text-muted-foreground">
+            API costs covered by{" "}
+            <a
+              href="https://x.com/lamps_apple"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              @lamps_apple
+            </a>
+          </p>
+        </div>
 
         {/* Results Section */}
         {result && (
