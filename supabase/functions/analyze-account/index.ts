@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,6 +40,24 @@ serve(async (req) => {
 
     console.log(`Analyzing X account: @${handle}`);
 
+    // Initialize Supabase client
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Check cache for existing search results
+    const { data: cachedData, error: cacheError } = await supabase
+      .from('x_account_cache')
+      .select('search_response')
+      .eq('x_handle', handle.toLowerCase())
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (cacheError) {
+      console.error("Cache lookup error:", cacheError);
+    }
+
     const systemPrompt = `You are an expert Art Director AI specializing in satirical cartoon and comic book illustration. Your function is to translate the essence of an X social media account into a single, masterful cartoon image generation prompt.
 
 Your process:
@@ -61,8 +80,55 @@ Examples of masterful cartoon prompts:
 
 Your final output must be ONLY the image generation prompt. No preamble, no explanation. Just the prompt.`;
 
-    // Call xAI Grok API with search enabled for X posts
-    const response = await fetch("https://api.x.ai/v1/chat/completions", {
+    let imagePrompt: string;
+
+    // If we have cached data, use it to generate a new prompt without search
+    if (cachedData?.search_response) {
+      console.log(`Cache hit for @${handle}, generating fresh prompt from cached data`);
+
+      const cachedContext = JSON.stringify(cachedData.search_response);
+
+      const response = await fetch("https://api.x.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${xaiApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "grok-4-fast",
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: `Based on this X account data: ${cachedContext}\n\nCreate a humorous but relevant image generation prompt that captures the account's essence.`,
+            },
+          ],
+          // No search_parameters - we're using cached data
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("xAI API error (cached):", response.status, errorText);
+        return new Response(
+          JSON.stringify({
+            error: `xAI API error: ${response.status}`,
+            details: errorText,
+          }),
+          {
+            status: response.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      const data = await response.json();
+      imagePrompt = data.choices?.[0]?.message?.content;
+    } else {
+      // Cache miss - perform full search and cache the result
+      console.log(`Cache miss for @${handle}, performing full search`);
+
+      const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${xaiApiKey}`,
@@ -77,36 +143,54 @@ Your final output must be ONLY the image generation prompt. No preamble, no expl
             content: `Analyze @${handle}'s posts and create a humorous but relevant image generation prompt that captures their account's essence.`,
           },
         ],
-        search_parameters: {
-          mode: "on",
-          sources: [
-            { 
-              type: "x", 
-              x_handles: [handle] 
-            }
-          ],
-          return_citations: true
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("xAI API error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({
-          error: `xAI API error: ${response.status}`,
-          details: errorText,
+          search_parameters: {
+            mode: "on",
+            sources: [
+              { 
+                type: "x", 
+                x_handles: [handle] 
+              }
+            ],
+            return_citations: true
+          },
         }),
-        {
-          status: response.status,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+      });
 
-    const data = await response.json();
-    const imagePrompt = data.choices?.[0]?.message?.content;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("xAI API error:", response.status, errorText);
+        return new Response(
+          JSON.stringify({
+            error: `xAI API error: ${response.status}`,
+            details: errorText,
+          }),
+          {
+            status: response.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      const data = await response.json();
+      imagePrompt = data.choices?.[0]?.message?.content;
+
+      // Cache the full response for 24 hours
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const { error: upsertError } = await supabase
+        .from('x_account_cache')
+        .upsert({
+          x_handle: handle.toLowerCase(),
+          search_response: data,
+          expires_at: expiresAt,
+        });
+
+      if (upsertError) {
+        console.error("Cache upsert error:", upsertError);
+        // Continue anyway - caching failure shouldn't break the flow
+      } else {
+        console.log(`Cached search response for @${handle} until ${expiresAt}`);
+      }
+    }
 
     if (!imagePrompt) {
       console.error("No prompt generated from Grok");
