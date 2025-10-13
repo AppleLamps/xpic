@@ -12,12 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt } = await req.json();
+    const { prompt, handle } = await req.json();
 
-    if (!prompt) {
-      console.error("No prompt provided");
+    if (!prompt || !handle) {
+      console.error("Missing required parameters");
       return new Response(
-        JSON.stringify({ error: "Prompt is required" }),
+        JSON.stringify({ error: "Both prompt and handle are required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -37,64 +37,93 @@ serve(async (req) => {
       );
     }
 
-    console.log("Generating image with prompt:", prompt);
+    // Attempt image generation with retry logic
+    const attemptImageGeneration = async (
+      currentPrompt: string,
+      isRetry: boolean
+    ): Promise<string> => {
+      console.log(`Attempting image generation (retry: ${isRetry})`);
+      console.log("Using prompt:", currentPrompt);
 
-    // Call OpenRouter API with Gemini 2.5 Flash Image
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${openrouterApiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://x-image-generator.lovable.app",
-        "X-Title": "X Account Image Generator",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        messages: [
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openrouterApiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://x-image-generator.lovable.app",
+          "X-Title": "X Account Image Generator",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image",
+          messages: [
+            {
+              role: "user",
+              content: currentPrompt,
+            },
+          ],
+          modalities: ["image", "text"],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("OpenRouter API error:", response.status, errorText);
+        throw new Error(`OpenRouter API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("OpenRouter response:", JSON.stringify(data, null, 2));
+
+      // Check for safety block
+      const finishReason = data.choices?.[0]?.native_finish_reason;
+      if (finishReason === "IMAGE_SAFETY") {
+        if (isRetry) {
+          console.error("Image blocked by safety even after regenerating with guidelines");
+          throw new Error("Content cannot be safely generated - blocked by safety filters");
+        }
+
+        console.log("Safety block detected - regenerating prompt with safety guidelines");
+
+        // Call analyze-account again with safety guidelines enabled
+        const analyzeResponse = await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/functions/v1/analyze-account`,
           {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        modalities: ["image", "text"],
-      }),
-    });
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              handle: handle,
+              useSafetyGuidelines: true,
+            }),
+          }
+        );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenRouter API error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({
-          error: `OpenRouter API error: ${response.status}`,
-          details: errorText,
-        }),
-        {
-          status: response.status,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        if (!analyzeResponse.ok) {
+          console.error("Failed to regenerate prompt");
+          throw new Error("Failed to regenerate safe prompt");
         }
-      );
-    }
 
-    const data = await response.json();
-    console.log("OpenRouter response:", JSON.stringify(data, null, 2));
+        const { imagePrompt: safePrompt } = await analyzeResponse.json();
+        console.log("Regenerated safe prompt:", safePrompt);
 
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        // Retry with the new, safer prompt
+        return attemptImageGeneration(safePrompt, true);
+      }
 
-    if (!imageUrl) {
-      console.error("No image URL in response:", data);
-      return new Response(
-        JSON.stringify({
-          error: "Failed to generate image - no image URL in response",
-          details: data,
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+      const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (!imageUrl) {
+        console.error("No image URL in response:", data);
+        throw new Error("Failed to generate image - no image URL in response");
+      }
 
-    console.log("Generated image URL:", imageUrl.substring(0, 100) + "...");
+      console.log("Generated image URL:", imageUrl.substring(0, 100) + "...");
+      return imageUrl;
+    };
+
+    // Start the image generation process
+    const imageUrl = await attemptImageGeneration(prompt, false);
 
     return new Response(JSON.stringify({ imageUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

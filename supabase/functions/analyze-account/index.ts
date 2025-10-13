@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { handle } = await req.json();
+    const { handle, useSafetyGuidelines } = await req.json();
 
     if (!handle) {
       console.error("No handle provided");
@@ -58,7 +58,7 @@ serve(async (req) => {
       console.error("Cache lookup error:", cacheError);
     }
 
-    const systemPrompt = `You are an expert Art Director AI specializing in satirical cartoon and comic book illustration. Your function is to translate the essence of an X social media account into a single, masterful cartoon image generation prompt.
+    let systemPrompt = `You are an expert Art Director AI specializing in satirical cartoon and comic book illustration. Your function is to translate the essence of an X social media account into a single, masterful cartoon image generation prompt.
 
 Your process:
 1. Deeply analyze the provided X posts to understand the account's core themes, personality, recurring jokes, and communication style.
@@ -79,6 +79,15 @@ Examples of masterful cartoon prompts:
 - "A grinning motivational speaker caricature with an impossibly wide smile and oversized teeth, standing atop a mountain of glowing self-help books stacked impossibly high, arms raised in a victorious V-shape with dollar signs shooting from their fingertips like magical rays. Smaller cartoon figures climb the book mountain below, some slipping on titles like 'GET RICH QUICK' and 'MINDSET SECRETS,' while motivational buzzwords float in speech bubbles ('HUSTLE!' 'GRIND!' 'MANIFEST!'). The background shows a sunrise with exaggerated lens flare effects and inspirational light beams. Bold satirical cartoon style with vibrant, oversaturated colors, thick outlines, exaggerated proportions, and comedic visual metaphors reminiscent of editorial political cartoons."
 
 Your final output must be ONLY the image generation prompt. No preamble, no explanation. Just the prompt.`;
+
+    // Add safety guidelines if requested
+    if (useSafetyGuidelines) {
+      systemPrompt += `\n\nContent Guidelines:
+- **Stay Clever, Not Explicit:** Use visual metaphors, symbolism, and satirical imagery rather than explicit offensive terminology.
+- **No Explicit Slurs or Graphic Violence:** Avoid terms related to sexual misconduct, extreme violence, hate speech slurs, or graphic descriptions of harm.
+- **Controversy Through Imagery:** Capture controversial themes through symbolic representation (e.g., use clashing symbols, opposing forces, visual tension) rather than direct offensive language.
+- **Satirical ≠ Offensive:** Great satire can be biting and edgy through clever visual choices, exaggerated caricature, and absurdist humor without explicit offensive content.`;
+    }
 
     let imagePrompt: string;
 

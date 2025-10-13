@@ -57,7 +57,10 @@ const Index = () => {
       const { data: imageData, error: imageError } = await supabase.functions.invoke(
         "generate-image",
         {
-          body: { prompt: analysisData.imagePrompt },
+          body: { 
+            prompt: analysisData.imagePrompt,
+            handle: handle.trim().replace("@", "")
+          },
         }
       );
 
