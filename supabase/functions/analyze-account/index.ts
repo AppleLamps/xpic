@@ -138,31 +138,44 @@ Your final output must be ONLY the image generation prompt. No preamble, no expl
       console.log(`Cache miss for @${handle}, performing full search`);
 
       const response = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${xaiApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "grok-4-fast",
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: `Analyze @${handle}'s posts and create a humorous but relevant image generation prompt that captures their account's essence.`,
-          },
-        ],
-          search_parameters: {
-            mode: "on",
-            sources: [
-              { 
-                type: "x", 
-                x_handles: [handle] 
-              }
-            ],
-            return_citations: true,
-            max_search_results: 10
-          },
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${xaiApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "grok-4-fast",
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: `Analyze @${handle}'s posts and create a humorous but relevant image generation prompt that captures their account's essence.`,
+            },
+          ],
+          // Build a 6-month date window and include engagement filter
+          ...(() => {
+            const today = new Date();
+            const toDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
+            const sixMonthsAgo = new Date(today.getTime() - 182 * 24 * 60 * 60 * 1000);
+            const fromDate = sixMonthsAgo.toISOString().split('T')[0];
+
+            return {
+              search_parameters: {
+                mode: "on",
+                sources: [
+                  {
+                    type: "x",
+                    x_handles: [handle],
+                    post_favorite_count: 1,
+                  },
+                ],
+                from_date: fromDate,
+                to_date: toDate,
+                return_citations: true,
+                max_search_results: 10,
+              },
+            };
+          })(),
         }),
       });
 
