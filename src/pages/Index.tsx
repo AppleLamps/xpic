@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, FileImage, Image as ImageIcon, AlertCircle, Sparkles } from "lucide-react";
+import { Loader2, FileImage, Image as ImageIcon, AlertCircle, Sparkles, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -68,6 +68,27 @@ const Index = () => {
     }
   };
 
+  const handleDownload = async () => {
+    if (!result?.imageUrl) return;
+
+    try {
+      const response = await fetch(result.imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `x-account-${handle.trim().replace("@", "")}-generated.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Image downloaded!");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download image");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background-secondary py-12 px-4">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -85,9 +106,9 @@ const Index = () => {
           </p>
           <p className="text-sm text-muted-foreground">
             API costs covered by{" "}
-            <a 
-              href="https://x.com/lamps_apple" 
-              target="_blank" 
+            <a
+              href="https://x.com/lamps_apple"
+              target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"
             >
@@ -167,22 +188,35 @@ const Index = () => {
               </div>
 
               {/* Image Display */}
-              <div className="flex justify-center">
-                <img
-                  src={result.imageUrl}
-                  alt="Generated from X account analysis"
-                  className="max-w-full h-auto rounded-lg shadow-2xl"
-                  onError={(e) => {
-                    console.error("Image failed to load:", result.imageUrl);
-                    e.currentTarget.style.display = "none";
-                    e.currentTarget.parentElement!.innerHTML = `
-                      <div class="p-8 bg-destructive/10 border border-destructive rounded-lg text-center">
-                        <p class="text-destructive">Failed to load image</p>
-                        <p class="text-sm text-muted-foreground mt-2">The image URL may be invalid or expired</p>
-                      </div>
-                    `;
-                  }}
-                />
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <img
+                    src={result.imageUrl}
+                    alt="Generated from X account analysis"
+                    className="max-w-full h-auto rounded-lg shadow-2xl"
+                    onError={(e) => {
+                      console.error("Image failed to load:", result.imageUrl);
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.parentElement!.innerHTML = `
+                        <div class="p-8 bg-destructive/10 border border-destructive rounded-lg text-center">
+                          <p class="text-destructive">Failed to load image</p>
+                          <p class="text-sm text-muted-foreground mt-2">The image URL may be invalid or expired</p>
+                        </div>
+                      `;
+                    }}
+                  />
+                </div>
+
+                {/* Download Button */}
+                <div className="flex justify-center">
+                  <Button
+                    onClick={handleDownload}
+                    className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Image
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
