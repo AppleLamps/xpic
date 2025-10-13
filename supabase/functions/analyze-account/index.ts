@@ -172,7 +172,7 @@ Your final output must be ONLY the image generation prompt. No preamble, no expl
                 from_date: fromDate,
                 to_date: toDate,
                 return_citations: true,
-                max_search_results: 10,
+                max_search_results: 15,
               },
             };
           })(),
