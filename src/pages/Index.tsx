@@ -80,6 +80,20 @@ const Index = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Generate AI-powered images based on X account analysis
           </p>
+          <p className="text-sm text-muted-foreground">
+            Powered by Grok-4-Fast and Gemini Nano Banana
+          </p>
+          <p className="text-sm text-muted-foreground">
+            API costs covered by{" "}
+            <a 
+              href="https://x.com/lamps_apple" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              @lamps_apple
+            </a>
+          </p>
         </div>
 
         {/* Input Section */}
