@@ -1,11 +1,33 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Loader2,
+  Image as ImageIcon,
+  AlertCircle,
+  Sparkles,
+  Download,
+  Heart,
+  Coffee,
+  DollarSign,
+  Palette,
+  Copy,
+  Check,
+  Zap,
+  Wand2,
+  ListChecks,
+  Search,
+  Sparkle,
+  ExternalLink,
+} from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Image as ImageIcon, AlertCircle, Sparkles, Download, Heart, Coffee, DollarSign, Palette, Copy, Check, Zap } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -21,19 +43,67 @@ import { usePromptHistory } from "@/hooks/usePromptHistory";
 const Index = () => {
   const [handle, setHandle] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [result, setResult] = useState<{ imagePrompt: string; imageUrl: string } | null>(null);
+  const [inputError, setInputError] = useState("");
+  const [globalError, setGlobalError] = useState("");
+  const [loadingStage, setLoadingStage] = useState<"analyze" | "image" | null>(null);
+  const [result, setResult] = useState<{ imagePrompt: string; imageUrl: string; username: string } | null>(null);
   const [donateOpen, setDonateOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [currentDonorIndex, setCurrentDonorIndex] = useState(0);
 
-  // Donors list
   const donors = ["F0XYOU", "RazorRuckus"];
+  const suggestionHandles = useMemo(() => ["levelsio", "pmarca", "ai__memes"], []);
+  const stageOrder: Array<"analyze" | "image"> = useMemo(() => ["analyze", "image"], []);
+  const progressSteps: Array<{
+    id: "analyze" | "image";
+    title: string;
+    description: string;
+    icon: LucideIcon;
+  }> = useMemo(
+    () => [
+      {
+        id: "analyze",
+        title: "Understand the vibe",
+        description: "Grok inspects recent posts and highlights the dominant tone.",
+        icon: Search,
+      },
+      {
+        id: "image",
+        title: "Paint the artwork",
+        description: "Gemini turns the brief into a bespoke visual composition.",
+        icon: Wand2,
+      },
+    ],
+    []
+  );
 
-  // Prompt history hook
+  const howItWorks: Array<{
+    title: string;
+    description: string;
+    icon: LucideIcon;
+  }> = useMemo(
+    () => [
+      {
+        title: "Share an X handle",
+        description: "We only need the username—no authentication or passwords required.",
+        icon: Sparkles,
+      },
+      {
+        title: "We study the signal",
+        description: "Grok reads the timeline to learn the personality, pace, and topics you care about.",
+        icon: ListChecks,
+      },
+      {
+        title: "Receive a tailored artwork",
+        description: "Gemini renders a polished illustration inspired by your online voice.",
+        icon: Palette,
+      },
+    ],
+    []
+  );
+
   const { history, addToHistory, deleteFromHistory, clearHistory } = usePromptHistory();
 
-  // Rotate donor username every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentDonorIndex((prevIndex) => (prevIndex + 1) % donors.length);
@@ -42,37 +112,48 @@ const Index = () => {
     return () => clearInterval(interval);
   }, [donors.length]);
 
+  const focusInput = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    requestAnimationFrame(() => {
+      const element = document.getElementById("handle-input");
+      element?.focus();
+    });
+  };
+
   const handleGenerate = async () => {
-    if (!handle.trim()) {
-      setError("Please enter an X handle");
+    const normalizedHandle = handle.trim().replace("@", "");
+
+    if (!normalizedHandle) {
+      setInputError("Enter an X username to get started.");
       return;
     }
 
     setIsLoading(true);
-    setError("");
+    setInputError("");
+    setGlobalError("");
     setResult(null);
+    setLoadingStage("analyze");
 
     try {
-      // Step 1: Analyze with Grok
       toast.info("Analyzing X account...");
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke(
         "analyze-account",
         {
-          body: { handle: handle.trim().replace("@", "") },
+          body: { handle: normalizedHandle },
         }
       );
 
       if (analysisError) throw analysisError;
       if (!analysisData?.imagePrompt) throw new Error("Failed to generate image prompt");
 
-      // Step 2: Generate image with Gemini
+      setLoadingStage("image");
       toast.info("Generating image...");
       const { data: imageData, error: imageError } = await supabase.functions.invoke(
         "generate-image",
         {
           body: {
             prompt: analysisData.imagePrompt,
-            handle: handle.trim().replace("@", "")
+            handle: normalizedHandle,
           },
         }
       );
@@ -83,27 +164,27 @@ const Index = () => {
       setResult({
         imagePrompt: analysisData.imagePrompt,
         imageUrl: imageData.imageUrl,
+        username: normalizedHandle,
       });
 
-      // Add to history
       addToHistory({
-        username: handle.trim().replace("@", ""),
+        username: normalizedHandle,
         prompt: analysisData.imagePrompt,
         imageUrl: imageData.imageUrl,
       });
 
       toast.success("Image generated successfully!");
 
-      // Scroll to results
       setTimeout(() => {
         document.getElementById("results")?.scrollIntoView({ behavior: "smooth" });
       }, 100);
     } catch (err: unknown) {
       console.error("Generation error:", err);
       const message = err instanceof Error ? err.message : "Failed to generate image. Please try again.";
-      setError(message);
+      setGlobalError(message);
       toast.error("Failed to generate image");
     } finally {
+      setLoadingStage(null);
       setIsLoading(false);
     }
   };
@@ -115,9 +196,9 @@ const Index = () => {
       const response = await fetch(result.imageUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = `x-account-${handle.trim().replace("@", "")}-generated.png`;
+      link.download = `x-account-${result.username}-generated.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -137,7 +218,6 @@ const Index = () => {
       setIsCopied(true);
       toast.success("Prompt copied to clipboard!");
 
-      // Reset the copied state after 2 seconds
       setTimeout(() => {
         setIsCopied(false);
       }, 2000);
@@ -147,6 +227,14 @@ const Index = () => {
     }
   };
 
+  const handleSuggestionClick = (suggestion: string) => {
+    setHandle(suggestion);
+    setInputError("");
+    focusInput();
+  };
+
+  const isGenerateDisabled = isLoading;
+
   return (
     <SidebarProvider defaultOpen={false}>
       <PromptHistorySidebar
@@ -155,36 +243,41 @@ const Index = () => {
         onClearAll={clearHistory}
       />
       <div className="relative min-h-screen w-full overflow-hidden flex-1">
-        <div className="aurora-background"></div>
+        <div className="aurora-background" />
 
-        {/* Sidebar Toggle Button */}
         <div className="fixed top-4 left-4 z-50">
-          <SidebarTrigger className="glass-card p-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl border border-slate-300/50">
+          <SidebarTrigger
+            aria-label="Open prompt history"
+            className="p-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl border border-slate-300/50 bg-white/80 backdrop-blur-sm"
+          >
             <Sparkles className="h-5 w-5 text-slate-700" />
+            <span className="sr-only">Open prompt history</span>
           </SidebarTrigger>
         </div>
 
-        <main className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
-          <div className="max-w-4xl w-full mx-auto space-y-12">
-            {/* Header */}
-            <div className="text-center space-y-4 animate-fade-in">
-              <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-slate-200/60 via-slate-100/50 to-slate-200/60 backdrop-blur-xl border border-slate-300/50 shadow-2xl mb-4">
-                <Zap className="w-12 h-12 text-slate-700 drop-shadow-sm" />
+        <main className="relative z-10 flex flex-col items-center min-h-screen px-4 sm:px-6 lg:px-8 pt-12 pb-10">
+          <div className="max-w-4xl w-full mx-auto space-y-12 md:space-y-14">
+            <div className="text-center space-y-5 md:space-y-6 animate-fade-in">
+              <Badge variant="secondary" className="uppercase tracking-wide text-xs px-3 py-1 rounded-full">
+                Beta • AI-generated profile art
+              </Badge>
+              <div className="flex flex-col items-center justify-center gap-4 md:flex-row md:gap-5">
+                <div className="flex items-center justify-center w-[68px] h-[68px] md:w-20 md:h-20 rounded-3xl bg-gradient-to-br from-slate-200/60 via-slate-100/50 to-slate-200/60 backdrop-blur-xl border border-slate-300/50 shadow-2xl">
+                  <Zap className="w-8 h-8 md:w-10 md:h-10 text-slate-700 drop-shadow-sm" />
+                </div>
+                <h1 className="text-[2.4rem] md:text-[3.3rem] leading-tight font-serif font-black tracking-tight title-glow">
+                  𝕏-pressionist
+                </h1>
               </div>
-              <h1 className="text-5xl md:text-7xl font-serif font-black tracking-tight title-glow pb-2">
-                𝕏-pressionist
-              </h1>
-              <p className="text-xl md:text-2xl text-foreground/70 max-w-2xl mx-auto font-medium">
-                Your 𝕏 profile, visualized by AI
+              <p className="text-base md:text-lg text-foreground/70 max-w-2xl mx-auto">
+                Transform any public X timeline into a bespoke AI artwork—perfect for profile revamps, launch campaigns, or gifting friends a fresh visual identity.
               </p>
 
-              {/* Support API Costs Button */}
-              <div className="pt-2">
+              <div className="flex items-center justify-center gap-2.5 md:gap-3 pt-1">
                 <Dialog open={donateOpen} onOpenChange={setDonateOpen}>
                   <DialogTrigger asChild>
-                    <Button className="support-button">
-                      <span aria-hidden className="support-sparkle" />
-                      <Heart className="w-4 h-4 mr-2 fill-current" />
+                    <Button variant="secondary" className="rounded-full px-5 h-10">
+                      <Heart className="w-4 h-4 mr-2" />
                       Support API Costs
                     </Button>
                   </DialogTrigger>
@@ -195,20 +288,27 @@ const Index = () => {
                         Support This Project
                       </DialogTitle>
                       <DialogDescription className="text-base pt-2 text-muted-foreground">
-                        All donated funds will be used to cover API costs. Thank you — truly appreciated.
+                        Every donation goes straight to Grok + Gemini usage. Thank you for keeping the brushes moving.
                       </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-3 pt-4">
                       <a href="https://buymeacoffee.com/applelampsg" target="_blank" rel="noopener noreferrer" className="block">
-                        <Button className="w-full h-14 text-base bg-primary/90 hover:bg-primary text-primary-foreground border border-white/10" onClick={() => setDonateOpen(false)}>
+                        <Button
+                          className="w-full h-12 text-base"
+                          onClick={() => setDonateOpen(false)}
+                        >
                           <Coffee className="w-5 h-5 mr-2" />
                           Buy Me a Coffee
                         </Button>
                       </a>
 
                       <a href="https://cash.app/$applelamps" target="_blank" rel="noopener noreferrer" className="block">
-                        <Button className="w-full h-14 text-base bg-secondary/90 hover:bg-secondary text-secondary-foreground border border-white/10" onClick={() => setDonateOpen(false)}>
+                        <Button
+                          variant="outline"
+                          className="w-full h-12 text-base"
+                          onClick={() => setDonateOpen(false)}
+                        >
                           <DollarSign className="w-5 h-5 mr-2" />
                           CashApp: $applelamps
                         </Button>
@@ -216,114 +316,239 @@ const Index = () => {
                     </div>
                   </DialogContent>
                 </Dialog>
+                <Button variant="ghost" className="gap-2" onClick={focusInput}>
+                  <Sparkle className="w-4 h-4" />
+                  Try it now
+                </Button>
               </div>
             </div>
 
-            {/* Input Section */}
-            <Card className="glass-card shadow-2xl animate-scale-in w-full max-w-3xl mx-auto">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-foreground">
+            <Card className="glass-card shadow-xl animate-scale-in w-full max-w-3xl mx-auto">
+              <CardHeader className="pb-4 space-y-4 text-center">
+                <CardTitle className="flex items-center justify-center gap-2 text-foreground text-xl font-semibold">
                   <Sparkles className="w-5 h-5 text-primary" />
-                  Enter 𝕏 Handle
+                  <span>Generate your custom artwork</span>
                 </CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  Enter an 𝕏 username to generate a unique image.
+                <CardDescription className="text-muted-foreground text-sm leading-relaxed max-w-xl mx-auto">
+                  We analyze the handle’s recent posts to craft an art brief, then render a polished illustration in seconds.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 pt-2 pb-8 px-8">
-                <div className="flex flex-col sm:flex-row gap-3 items-center max-w-3xl mx-auto">
-                  <div className="flex-1 relative w-full">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                      @
-                    </span>
-                    <Input
-                      placeholder="elonmusk"
-                      value={handle}
-                      onChange={(e) => setHandle(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && !isLoading && handleGenerate()}
-                      disabled={isLoading}
-                      className="pl-8 !text-base sm:!text-sm"
-                    />
+              <CardContent className="space-y-6 pt-1 pb-6 px-6 sm:px-7">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="handle-input" className="text-sm font-medium text-foreground">
+                      X username
+                    </Label>
+                    <Badge variant="outline" className="text-xs font-normal">
+                      Public handles only
+                    </Badge>
                   </div>
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={isLoading || !handle.trim()}
-                    size="lg"
-                    className="generate-button bg-gradient-to-r from-slate-700 to-slate-600 text-white font-semibold hover:from-slate-600 hover:to-slate-500 hover:scale-[1.02] hover:shadow-xl transition-all duration-300 shadow-lg"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="w-5 h-5 mr-2" />
-                        Generate Image
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+                    <div className="flex-1 relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                        @
+                      </span>
+                      <Input
+                        id="handle-input"
+                        placeholder="midjourney"
+                        value={handle}
+                        onChange={(e) => {
+                          setHandle(e.target.value);
+                          if (inputError) setInputError("");
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && !isGenerateDisabled && handleGenerate()}
+                        disabled={isLoading}
+                        className="pl-8 text-base"
+                        autoComplete="off"
+                        spellCheck={false}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleGenerate}
+                      disabled={isGenerateDisabled}
+                      size="lg"
+                      className="bg-gradient-to-r from-slate-700 to-slate-600 text-white font-semibold hover:from-slate-600 hover:to-slate-500 hover:scale-[1.02] hover:shadow-xl transition-all duration-300 shadow-lg w-full sm:w-auto sm:min-w-[180px]"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                          Working...
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-5 h-5 mr-2" />
+                          Generate image
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  {inputError && (
+                    <p className="text-sm text-destructive flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      {inputError}
+                    </p>
+                  )}
                 </div>
 
-                {/* API Costs Tamed By */}
-                <div className="text-center pt-2">
-                  <p className="text-sm text-muted-foreground inline-flex items-center justify-center gap-1">
-                    <span>API costs tamed by:</span>
-                    <span className="font-semibold text-foreground inline-block min-w-[110px] text-left">@{donors[currentDonorIndex]}</span>
-                  </p>
+                <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground pt-1 text-center">
+                  <span className="uppercase tracking-wide text-[0.7rem] font-semibold text-muted-foreground/80">
+                    Quick suggestions:
+                  </span>
+                  {suggestionHandles.map((suggestion) => (
+                    <Button
+                      key={suggestion}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full px-3"
+                      disabled={isLoading}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                    >
+                      @{suggestion}
+                    </Button>
+                  ))}
                 </div>
 
-                {error && (
-                  <Alert variant="destructive" className="animate-fade-in bg-destructive/10">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
+                <div className="flex items-center justify-center pt-2">
+                  <div className="inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-border/80 bg-white/80 px-5 py-2 text-[0.75rem] sm:text-sm text-muted-foreground shadow-sm">
+                    <Sparkles className="h-4 w-4" />
+                    <span className="font-medium">Powered by Grok + Gemini</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="inline-flex items-center gap-2 font-medium">
+                      API costs tamed by
+                      <Badge variant="secondary" className="font-semibold px-3 py-1 shadow-sm">
+                        @{donors[currentDonorIndex]}
+                      </Badge>
+                    </span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Results Section */}
+            {globalError && (
+              <Alert variant="destructive" className="animate-fade-in">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>We hit a snag</AlertTitle>
+                <AlertDescription>{globalError}</AlertDescription>
+              </Alert>
+            )}
+
+            {isLoading && (
+              <Card className="glass-card shadow-xl animate-fade-in">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-foreground text-lg">
+                    <Wand2 className="w-5 h-5 text-primary" />
+                    Creating your artwork
+                  </CardTitle>
+                  <CardDescription className="text-sm">Hang tight—this usually takes less than 10 seconds.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3.5">
+                  {progressSteps.map(({ id, title, description, icon: Icon }) => {
+                    const activeIndex = loadingStage ? stageOrder.indexOf(loadingStage) : -1;
+                    const stepIndex = stageOrder.indexOf(id);
+                    const isActive = loadingStage === id;
+                    const isComplete = activeIndex > stepIndex;
+
+                    return (
+                      <div
+                        key={id}
+                        className="flex items-start gap-3 rounded-xl border border-white/30 bg-white/40 backdrop-blur p-4"
+                      >
+                        <div
+                          className={`flex h-10 w-10 items-center justify-center rounded-full border ${
+                            isComplete
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : isActive
+                                ? "border-primary/60 bg-primary/10 text-primary"
+                                : "border-border bg-background text-muted-foreground"
+                          }`}
+                        >
+                          {isComplete ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-sm text-foreground">{title}</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            )}
+
+            <section className="space-y-5">
+              <div className="flex items-center gap-2">
+                <Sparkle className="h-4 w-4 text-primary" />
+                <h2 className="text-base font-semibold text-foreground">How it works</h2>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                {howItWorks.map(({ title, description, icon: Icon }) => (
+                  <Card key={title} className="border border-border/70 bg-white/70 backdrop-blur">
+                    <CardContent className="space-y-2.5 pt-5 pb-5">
+                      <div className="flex items-center gap-2 text-primary text-xs font-semibold uppercase tracking-wide">
+                        <Icon className="h-4 w-4" />
+                        {title}
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </section>
+
             {result && (
               <Card id="results" className="glass-card shadow-2xl animate-fade-in w-full">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-foreground">
-                    <ImageIcon className="w-5 h-5 text-primary" />
-                    Generated Image
-                  </CardTitle>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <CardTitle className="flex items-center gap-2 text-foreground">
+                        <ImageIcon className="w-5 h-5 text-primary" />
+                        Your generated artwork
+                      </CardTitle>
+                      <Badge variant="secondary" className="flex items-center gap-2 w-fit">
+                        <Sparkles className="h-4 w-4" />@{result.username}
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      Save the image, reuse the prompt in your favourite editor, or refine with another handle.
+                    </CardDescription>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="p-4 bg-gradient-to-br from-slate-700/8 via-slate-600/5 to-slate-700/8 border border-white/20 rounded-lg shadow-[inset_0_2px_8px_rgba(0,0,0,0.15),0_4px_12px_rgba(0,0,0,0.15)] backdrop-blur-sm">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm text-muted-foreground inline-flex items-center gap-2">
-                        <Palette className="w-4 h-4" />
-                        Prompt
-                      </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Palette className="w-4 h-4 text-primary" />
+                        Creative brief
+                      </span>
                       <Button
                         onClick={handleCopyPrompt}
                         size="sm"
                         variant="ghost"
-                        className="h-8 px-2 hover:bg-white/10 transition-colors"
+                        className="h-8 px-3"
                       >
                         {isCopied ? (
                           <>
                             <Check className="w-4 h-4 mr-1 text-green-500" />
-                            <span className="text-xs text-green-500">Copied!</span>
+                            Copied!
                           </>
                         ) : (
                           <>
                             <Copy className="w-4 h-4 mr-1" />
-                            <span className="text-xs">Copy</span>
+                            Copy
                           </>
                         )}
                       </Button>
                     </div>
-                    <p className="text-sm italic text-foreground">{result.imagePrompt}</p>
+                    <div className="rounded-xl border border-border/60 bg-white/60 p-4 text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+                      {result.imagePrompt}
+                    </div>
                   </div>
                   <div className="space-y-4">
-                    <div className="flex justify-center p-2 border border-white/20 rounded-lg bg-black/10">
+                    <div className="flex justify-center p-3 border border-white/20 rounded-lg bg-black/10">
                       <img
                         src={result.imageUrl}
-                        alt="Generated from X account analysis"
+                        alt={`Generated from X account analysis for @${result.username}`}
                         className="max-w-full h-auto rounded-md shadow-2xl"
                         onError={(e) => {
                           console.error("Image failed to load:", result.imageUrl);
@@ -331,14 +556,23 @@ const Index = () => {
                         }}
                       />
                     </div>
-                    <div className="flex justify-center">
+                    <div className="flex flex-wrap items-center justify-center gap-3">
                       <Button
                         onClick={handleDownload}
                         size="lg"
                         className="bg-gradient-to-r from-slate-700 to-slate-600 text-white font-semibold hover:from-slate-600 hover:to-slate-500 hover:scale-[1.02] hover:shadow-xl transition-all duration-300 shadow-lg"
                       >
                         <Download className="w-5 h-5 mr-2" />
-                        Download Image
+                        Download image
+                      </Button>
+                      <Button
+                        onClick={focusInput}
+                        variant="outline"
+                        size="lg"
+                        className="gap-2"
+                      >
+                        <Sparkle className="w-4 h-4" />
+                        Generate another
                       </Button>
                     </div>
                   </div>
@@ -346,13 +580,24 @@ const Index = () => {
               </Card>
             )}
 
-            {/* Footer */}
             <footer className="text-center space-y-2 pt-8 pb-6">
+              <Separator className="mx-auto max-w-xs" />
               <div className="text-sm text-muted-foreground space-y-1.5">
-                <p className="font-medium tracking-wide">Powered by Grok-4-Fast and Gemini Nano Banana</p>
-                <p>
-                  API costs covered by{" "}
-                  <a href="https://x.com/lamps_apple" target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline font-medium transition-colors">@lamps_apple</a>
+                <p className="font-medium tracking-wide flex items-center justify-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Powered by Grok-4-Fast & Gemini Nano Banana
+                </p>
+                <p className="flex items-center justify-center gap-2">
+                  API costs covered by
+                  <a
+                    href="https://x.com/lamps_apple"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-foreground hover:underline font-medium transition-colors"
+                  >
+                    @lamps_apple
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
                 </p>
               </div>
             </footer>

@@ -107,6 +107,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 
   /* Modern elegant light background with subtle grey tones */
@@ -234,27 +235,14 @@ All colors MUST be HSL.
 
   /* Refined glassmorphism effect on the card */
   .glass-card {
-    @apply border border-slate-200/60 bg-white/40 backdrop-blur-2xl;
+    @apply border border-slate-200/60 bg-white/50 backdrop-blur-2xl;
     background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.5) 0%,
-      rgba(248, 250, 252, 0.4) 100%);
+      rgba(255, 255, 255, 0.58) 0%,
+      rgba(248, 250, 252, 0.42) 100%);
     box-shadow:
-      0 10px 40px rgba(15, 23, 42, 0.08),
-      0 4px 16px rgba(15, 23, 42, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .glass-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(148, 163, 184, 0.3);
-    background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.6) 0%,
-      rgba(248, 250, 252, 0.5) 100%);
-    box-shadow:
-      0 20px 60px rgba(15, 23, 42, 0.12),
-      0 8px 24px rgba(15, 23, 42, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      0 12px 48px rgba(15, 23, 42, 0.08),
+      0 6px 24px rgba(15, 23, 42, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
   }
 
   /* Pulse glow animation for icon */
@@ -279,14 +267,14 @@ All colors MUST be HSL.
 
   /* Dialog glass effect without hover (prevents glitchy behavior) */
   .dialog-glass {
-    @apply border border-slate-200/60 bg-white/40 backdrop-blur-2xl;
+    @apply border border-slate-200/60 bg-white/45 backdrop-blur-2xl;
     background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.58) 0%,
       rgba(248, 250, 252, 0.4) 100%);
     box-shadow:
-      0 10px 40px rgba(15, 23, 42, 0.08),
-      0 4px 16px rgba(15, 23, 42, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      0 12px 48px rgba(15, 23, 42, 0.08),
+      0 6px 24px rgba(15, 23, 42, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
   }
 
   /* Luxurious gold shimmering support button */
@@ -317,6 +305,7 @@ All colors MUST be HSL.
     transition: all .3s cubic-bezier(.2, .8, .2, 1);
     animation: goldShimmer 3s ease-in-out infinite;
     -webkit-tap-highlight-color: transparent;
+    margin: 0;
   }
 
   /* Animated gold shimmer effect */
