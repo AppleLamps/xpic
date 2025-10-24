@@ -94,7 +94,8 @@ const generateWithFlux = async (prompt: string): Promise<string> => {
       width: 1024,
       height: 1024,
       steps: 4,
-      output_format: "png"
+      output_format: "jpeg",
+      response_format: "url"
     }),
   });
 
