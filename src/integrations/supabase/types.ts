@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      usage_tracking: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_reset_at: string | null
+          premium_images_count: number | null
+          updated_at: string | null
+          user_identifier: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_reset_at?: string | null
+          premium_images_count?: number | null
+          updated_at?: string | null
+          user_identifier: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_reset_at?: string | null
+          premium_images_count?: number | null
+          updated_at?: string | null
+          user_identifier?: string
+        }
+        Relationships: []
+      }
       x_account_cache: {
         Row: {
           created_at: string | null
