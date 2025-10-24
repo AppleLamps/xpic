@@ -105,8 +105,18 @@ const generateWithFlux = async (prompt: string): Promise<string> => {
   }
 
   const data = await response.json();
+  console.log("GetImg.ai response:", JSON.stringify(data));
+  
+  // GetImg.ai returns base64 image in the "image" field
+  const imageUrl = data.image || data.url || data.data?.[0]?.url;
+  
+  if (!imageUrl) {
+    console.error("No image in GetImg.ai response. Full data:", data);
+    throw new Error("GetImg.ai did not return an image");
+  }
+  
   console.log("Flux image generated successfully");
-  return data.url;
+  return imageUrl;
 };
 
 serve(async (req) => {
