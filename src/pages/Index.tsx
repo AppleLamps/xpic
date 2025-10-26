@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Loader2,
@@ -40,6 +40,53 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PromptHistorySidebar } from "@/components/PromptHistorySidebar";
 import { usePromptHistory } from "@/hooks/usePromptHistory";
 
+// Static data moved outside component to prevent recreation on every render
+const DONORS = ["F0XYOU", "RazorRuckus"];
+const SUGGESTION_HANDLES = ["levelsio", "pmarca", "ai__memes"];
+const STAGE_ORDER: Array<"analyze" | "image"> = ["analyze", "image"];
+
+const PROGRESS_STEPS: Array<{
+  id: "analyze" | "image";
+  title: string;
+  description: string;
+  icon: LucideIcon;
+}> = [
+    {
+      id: "analyze",
+      title: "Understand the vibe",
+      description: "Grok inspects recent posts and highlights the dominant tone.",
+      icon: Search,
+    },
+    {
+      id: "image",
+      title: "Paint the artwork",
+      description: "Gemini turns the brief into a bespoke visual composition.",
+      icon: Wand2,
+    },
+  ];
+
+const HOW_IT_WORKS: Array<{
+  title: string;
+  description: string;
+  icon: LucideIcon;
+}> = [
+    {
+      title: "Share an X handle",
+      description: "We only need the username—no authentication or passwords required.",
+      icon: Sparkles,
+    },
+    {
+      title: "We study the signal",
+      description: "Grok reads the timeline to learn the personality, pace, and topics you care about.",
+      icon: ListChecks,
+    },
+    {
+      title: "Receive a tailored artwork",
+      description: "Gemini renders a polished illustration inspired by your online voice.",
+      icon: Palette,
+    },
+  ];
+
 const Index = () => {
   const [handle, setHandle] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -51,66 +98,33 @@ const Index = () => {
   const [isCopied, setIsCopied] = useState(false);
   const [currentDonorIndex, setCurrentDonorIndex] = useState(0);
 
-  const donors = ["F0XYOU", "RazorRuckus"];
-  const suggestionHandles = useMemo(() => ["levelsio", "pmarca", "ai__memes"], []);
-  const stageOrder: Array<"analyze" | "image"> = useMemo(() => ["analyze", "image"], []);
-  const progressSteps: Array<{
-    id: "analyze" | "image";
-    title: string;
-    description: string;
-    icon: LucideIcon;
-  }> = useMemo(
-    () => [
-      {
-        id: "analyze",
-        title: "Understand the vibe",
-        description: "Grok inspects recent posts and highlights the dominant tone.",
-        icon: Search,
-      },
-      {
-        id: "image",
-        title: "Paint the artwork",
-        description: "Gemini turns the brief into a bespoke visual composition.",
-        icon: Wand2,
-      },
-    ],
-    []
-  );
-
-  const howItWorks: Array<{
-    title: string;
-    description: string;
-    icon: LucideIcon;
-  }> = useMemo(
-    () => [
-      {
-        title: "Share an X handle",
-        description: "We only need the username—no authentication or passwords required.",
-        icon: Sparkles,
-      },
-      {
-        title: "We study the signal",
-        description: "Grok reads the timeline to learn the personality, pace, and topics you care about.",
-        icon: ListChecks,
-      },
-      {
-        title: "Receive a tailored artwork",
-        description: "Gemini renders a polished illustration inspired by your online voice.",
-        icon: Palette,
-      },
-    ],
-    []
-  );
-
   const { history, addToHistory, deleteFromHistory, clearHistory } = usePromptHistory();
 
+  // Donor rotation effect - no dependencies needed since DONORS is constant
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentDonorIndex((prevIndex) => (prevIndex + 1) % donors.length);
+      setCurrentDonorIndex((prevIndex) => (prevIndex + 1) % DONORS.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [donors.length]);
+  }, []); // Empty dependency array - DONORS never changes
+
+  // Pause animations when tab is not visible to save CPU
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const root = document.documentElement;
+      if (document.hidden) {
+        // Pause all animations when tab is hidden
+        root.style.setProperty('animation-play-state', 'paused');
+      } else {
+        // Resume animations when tab is visible
+        root.style.setProperty('animation-play-state', 'running');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   const focusInput = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -248,7 +262,8 @@ const Index = () => {
         <div className="fixed top-4 left-4 z-50">
           <SidebarTrigger
             aria-label="Open prompt history"
-            className="p-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl border border-slate-300/50 bg-white/80 backdrop-blur-sm"
+            className="p-3 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl border border-slate-300/50 bg-white/90"
+            style={{ backdropFilter: 'blur(4px)' }}
           >
             <Sparkles className="h-5 w-5 text-slate-700" />
             <span className="sr-only">Open prompt history</span>
@@ -394,7 +409,7 @@ const Index = () => {
                   <span className="uppercase tracking-wide text-[0.7rem] font-semibold text-muted-foreground/80">
                     Quick suggestions:
                   </span>
-                  {suggestionHandles.map((suggestion) => (
+                  {SUGGESTION_HANDLES.map((suggestion) => (
                     <Button
                       key={suggestion}
                       type="button"
@@ -417,7 +432,7 @@ const Index = () => {
                     <span className="inline-flex items-center gap-2 font-medium">
                       API costs tamed by
                       <Badge variant="secondary" className="font-semibold px-3 py-1 shadow-sm">
-                        @{donors[currentDonorIndex]}
+                        @{DONORS[currentDonorIndex]}
                       </Badge>
                     </span>
                   </div>
@@ -443,9 +458,9 @@ const Index = () => {
                   <CardDescription className="text-sm">Hang tight—this usually takes less than 10 seconds.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3.5">
-                  {progressSteps.map(({ id, title, description, icon: Icon }) => {
-                    const activeIndex = loadingStage ? stageOrder.indexOf(loadingStage) : -1;
-                    const stepIndex = stageOrder.indexOf(id);
+                  {PROGRESS_STEPS.map(({ id, title, description, icon: Icon }) => {
+                    const activeIndex = loadingStage ? STAGE_ORDER.indexOf(loadingStage) : -1;
+                    const stepIndex = STAGE_ORDER.indexOf(id);
                     const isActive = loadingStage === id;
                     const isComplete = activeIndex > stepIndex;
 
@@ -455,13 +470,12 @@ const Index = () => {
                         className="flex items-start gap-3 rounded-xl border border-white/30 bg-white/40 backdrop-blur p-4"
                       >
                         <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-full border ${
-                            isComplete
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : isActive
-                                ? "border-primary/60 bg-primary/10 text-primary"
-                                : "border-border bg-background text-muted-foreground"
-                          }`}
+                          className={`flex h-10 w-10 items-center justify-center rounded-full border ${isComplete
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : isActive
+                              ? "border-primary/60 bg-primary/10 text-primary"
+                              : "border-border bg-background text-muted-foreground"
+                            }`}
                         >
                           {isComplete ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                         </div>
@@ -482,7 +496,7 @@ const Index = () => {
                 <h2 className="text-base font-semibold text-foreground">How it works</h2>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
-                {howItWorks.map(({ title, description, icon: Icon }) => (
+                {HOW_IT_WORKS.map(({ title, description, icon: Icon }) => (
                   <Card key={title} className="border border-border/70 bg-white/70 backdrop-blur">
                     <CardContent className="space-y-2.5 pt-5 pb-5">
                       <div className="flex items-center gap-2 text-primary text-xs font-semibold uppercase tracking-wide">

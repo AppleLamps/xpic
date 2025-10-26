@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export interface PromptHistoryItem {
   id: string;
@@ -10,11 +10,14 @@ export interface PromptHistoryItem {
 
 const STORAGE_KEY = "xpic-prompt-history";
 const MAX_HISTORY_ITEMS = 50;
+const SAVE_DEBOUNCE_MS = 500;
 
 export function usePromptHistory() {
   const [history, setHistory] = useState<PromptHistoryItem[]>([]);
+  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const isInitialLoadRef = useRef(true);
 
-  // Load history from localStorage on mount
+  // Load history from localStorage on mount (only once)
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -25,22 +28,45 @@ export function usePromptHistory() {
     } catch (error) {
       console.error("Failed to load prompt history:", error);
       setHistory([]);
+    } finally {
+      // Mark initial load as complete
+      isInitialLoadRef.current = false;
     }
-  }, []);
+  }, []); // Empty dependency - only run once on mount
 
-  // Save history to localStorage whenever it changes
+  // Debounced save to localStorage whenever history changes
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-    } catch (error) {
-      console.error("Failed to save prompt history:", error);
-      // Handle quota exceeded error
-      if (error instanceof Error && error.name === "QuotaExceededError") {
-        // Remove oldest items and try again
-        const reducedHistory = history.slice(0, Math.floor(MAX_HISTORY_ITEMS / 2));
-        setHistory(reducedHistory);
-      }
+    // Skip save on initial load to avoid redundant write
+    if (isInitialLoadRef.current) {
+      return;
     }
+
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Debounce writes by 500ms to reduce CPU usage
+    saveTimeoutRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      } catch (error) {
+        console.error("Failed to save prompt history:", error);
+        // Handle quota exceeded error
+        if (error instanceof Error && error.name === "QuotaExceededError") {
+          // Remove oldest items and try again
+          const reducedHistory = history.slice(0, Math.floor(MAX_HISTORY_ITEMS / 2));
+          setHistory(reducedHistory);
+        }
+      }
+    }, SAVE_DEBOUNCE_MS);
+
+    // Cleanup timeout on unmount or before next effect
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [history]);
 
   const addToHistory = (item: Omit<PromptHistoryItem, "id" | "createdAt">) => {

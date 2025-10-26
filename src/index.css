@@ -139,8 +139,10 @@ All colors MUST be HSL.
       radial-gradient(ellipse 1300px 850px at 30% 28%, hsl(220 20% 88% / 0.18) 0%, transparent 52%),
       radial-gradient(ellipse 1100px 750px at 72% 25%, hsl(200 18% 85% / 0.15) 0%, transparent 50%),
       radial-gradient(ellipse 950px 650px at 48% 75%, hsl(210 15% 87% / 0.16) 0%, transparent 52%);
-    animation: aurora 40s infinite ease-in-out;
-    filter: blur(90px);
+    animation: aurora 60s infinite ease-in-out;
+    filter: blur(60px);
+    will-change: transform, opacity;
+    contain: paint layout;
   }
 }
 
@@ -172,21 +174,24 @@ All colors MUST be HSL.
   /* Sophisticated gradient text for titles */
   .gradient-text {
     background: linear-gradient(135deg,
-      hsl(220 60% 35%) 0%,
-      hsl(210 65% 45%) 30%,
-      hsl(200 70% 48%) 60%,
-      hsl(210 65% 45%) 100%);
+        hsl(220 60% 35%) 0%,
+        hsl(210 65% 45%) 30%,
+        hsl(200 70% 48%) 60%,
+        hsl(210 65% 45%) 100%);
     background-size: 200% 200%;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: gradientShift 10s ease-in-out infinite;
+    animation: gradientShift 20s ease-in-out infinite;
   }
 
   @keyframes gradientShift {
-    0%, 100% {
+
+    0%,
+    100% {
       background-position: 0% 50%;
     }
+
     50% {
       background-position: 100% 50%;
     }
@@ -195,7 +200,7 @@ All colors MUST be HSL.
   /* Black text with subtle glow effect */
   .title-glow {
     color: hsl(0 0% 0%);
-    text-shadow: 
+    text-shadow:
       0 0 20px rgba(0, 0, 0, 0.15),
       0 0 40px rgba(0, 0, 0, 0.1),
       0 2px 4px rgba(0, 0, 0, 0.2);
@@ -207,6 +212,7 @@ All colors MUST be HSL.
       opacity: 0;
       transform: translateY(20px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -223,6 +229,7 @@ All colors MUST be HSL.
       opacity: 0;
       transform: scale(0.95);
     }
+
     to {
       opacity: 1;
       transform: scale(1);
@@ -235,24 +242,29 @@ All colors MUST be HSL.
 
   /* Refined glassmorphism effect on the card */
   .glass-card {
-    @apply border border-slate-200/60 bg-white/50 backdrop-blur-2xl;
+    @apply border border-slate-200/60;
     background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.58) 0%,
-      rgba(248, 250, 252, 0.42) 100%);
+        rgba(255, 255, 255, 0.85) 0%,
+        rgba(248, 250, 252, 0.75) 100%);
+    backdrop-filter: blur(8px);
     box-shadow:
       0 12px 48px rgba(15, 23, 42, 0.08),
       0 6px 24px rgba(15, 23, 42, 0.05),
       inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    contain: paint layout;
   }
 
   /* Pulse glow animation for icon */
   @keyframes pulse-glow {
-    0%, 100% {
+
+    0%,
+    100% {
       box-shadow:
         0 0 20px rgba(139, 92, 246, 0.4),
         0 0 40px rgba(59, 130, 246, 0.3),
         0 0 60px rgba(6, 182, 212, 0.2);
     }
+
     50% {
       box-shadow:
         0 0 30px rgba(139, 92, 246, 0.6),
@@ -262,19 +274,21 @@ All colors MUST be HSL.
   }
 
   .animate-pulse-glow {
-    animation: pulse-glow 3s ease-in-out infinite;
+    animation: pulse-glow 6s ease-in-out infinite;
   }
 
   /* Dialog glass effect without hover (prevents glitchy behavior) */
   .dialog-glass {
-    @apply border border-slate-200/60 bg-white/45 backdrop-blur-2xl;
+    @apply border border-slate-200/60;
     background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.58) 0%,
-      rgba(248, 250, 252, 0.4) 100%);
+        rgba(255, 255, 255, 0.85) 0%,
+        rgba(248, 250, 252, 0.75) 100%);
+    backdrop-filter: blur(8px);
     box-shadow:
       0 12px 48px rgba(15, 23, 42, 0.08),
       0 6px 24px rgba(15, 23, 42, 0.05),
       inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    contain: paint layout;
   }
 
   /* Luxurious gold shimmering support button */
@@ -289,11 +303,11 @@ All colors MUST be HSL.
     color: hsl(30 15% 12%);
     font-weight: 600;
     background: linear-gradient(135deg,
-      hsl(45 100% 58%) 0%,
-      hsl(43 100% 62%) 25%,
-      hsl(40 100% 68%) 50%,
-      hsl(43 100% 62%) 75%,
-      hsl(45 100% 58%) 100%);
+        hsl(45 100% 58%) 0%,
+        hsl(43 100% 62%) 25%,
+        hsl(40 100% 68%) 50%,
+        hsl(43 100% 62%) 75%,
+        hsl(45 100% 58%) 100%);
     background-size: 200% 200%;
     border: 1px solid hsl(45 100% 75% / 0.6);
     box-shadow:
@@ -303,20 +317,25 @@ All colors MUST be HSL.
       inset 0 -1px 2px hsl(40 80% 40% / 0.3);
     overflow: hidden;
     transition: all .3s cubic-bezier(.2, .8, .2, 1);
-    animation: goldShimmer 3s ease-in-out infinite;
+    animation: goldShimmer 6s ease-in-out infinite;
     -webkit-tap-highlight-color: transparent;
     margin: 0;
+    will-change: transform;
+    contain: layout style paint;
   }
 
   /* Animated gold shimmer effect */
   @keyframes goldShimmer {
-    0%, 100% {
+
+    0%,
+    100% {
       background-position: 0% 50%;
       box-shadow:
         0 2px 12px hsl(45 100% 50% / 0.4),
         0 8px 32px hsl(45 100% 50% / 0.25),
         inset 0 1px 0 hsl(45 100% 85% / 0.8);
     }
+
     50% {
       background-position: 100% 50%;
       box-shadow:
@@ -333,12 +352,12 @@ All colors MUST be HSL.
     inset: -20%;
     z-index: -1;
     background: radial-gradient(circle at 50% 50%,
-      hsl(45 100% 60% / 0.4) 0%,
-      hsl(45 100% 55% / 0.2) 30%,
-      transparent 70%);
+        hsl(45 100% 60% / 0.4) 0%,
+        hsl(45 100% 55% / 0.2) 30%,
+        transparent 70%);
     filter: blur(20px);
     opacity: 0.8;
-    animation: goldGlow 2s ease-in-out infinite alternate;
+    animation: goldGlow 4s ease-in-out infinite alternate;
     pointer-events: none;
   }
 
@@ -347,6 +366,7 @@ All colors MUST be HSL.
       transform: scale(0.95);
       opacity: 0.6;
     }
+
     100% {
       transform: scale(1.05);
       opacity: 1;
@@ -363,9 +383,9 @@ All colors MUST be HSL.
     height: 100%;
     transform: skewX(-20deg);
     background: linear-gradient(90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.8) 50%,
-      rgba(255, 255, 255, 0) 100%);
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.8) 50%,
+        rgba(255, 255, 255, 0) 100%);
     opacity: 0;
     transition: left 0.7s ease, opacity 0.3s ease;
     pointer-events: none;
@@ -379,11 +399,11 @@ All colors MUST be HSL.
   .support-button:hover {
     transform: translateY(-3px) scale(1.03);
     background: linear-gradient(135deg,
-      hsl(45 100% 62%) 0%,
-      hsl(43 100% 68%) 25%,
-      hsl(40 100% 72%) 50%,
-      hsl(43 100% 68%) 75%,
-      hsl(45 100% 62%) 100%);
+        hsl(45 100% 62%) 0%,
+        hsl(43 100% 68%) 25%,
+        hsl(40 100% 72%) 50%,
+        hsl(43 100% 68%) 75%,
+        hsl(45 100% 62%) 100%);
     box-shadow:
       0 4px 20px hsl(45 100% 50% / 0.6),
       0 12px 48px hsl(45 100% 50% / 0.4),
@@ -417,6 +437,19 @@ All colors MUST be HSL.
     filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.3));
   }
 
+  /* Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+
+    .aurora-background::before,
+    .gradient-text,
+    .animate-pulse-glow,
+    .support-button,
+    .support-button::after,
+    .support-button::before {
+      animation: none !important;
+    }
+  }
+
   /* Golden sparkle accents */
   .support-button .support-sparkle {
     position: absolute;
@@ -425,9 +458,9 @@ All colors MUST be HSL.
     width: 8px;
     height: 8px;
     background: radial-gradient(circle at 30% 30%,
-      hsl(45 100% 95%) 0%,
-      hsl(45 100% 75%) 40%,
-      rgba(255, 255, 255, 0) 70%);
+        hsl(45 100% 95%) 0%,
+        hsl(45 100% 75%) 40%,
+        rgba(255, 255, 255, 0) 70%);
     border-radius: 50%;
     opacity: 0;
     transform: scale(0.3) rotate(0deg);
