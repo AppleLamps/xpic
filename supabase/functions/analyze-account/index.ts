@@ -104,7 +104,7 @@ Your final output must be ONLY the image generation prompt. No preamble, no expl
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "grok-4-fast",
+          model: "grok-4-1-fast-reasoning-latest",
           messages: [
             { role: "system", content: systemPrompt },
             {
@@ -144,7 +144,7 @@ Your final output must be ONLY the image generation prompt. No preamble, no expl
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "grok-4-fast",
+          model: "grok-4-1-fast-reasoning-latest",
           messages: [
             { role: "system", content: systemPrompt },
             {
