@@ -180,7 +180,7 @@ serve(async (req) => {
             "X-Title": "X Account Image Generator",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image",
+            model: "black-forest-labs/flux.2-pro",
             messages: [
               {
                 role: "user",
