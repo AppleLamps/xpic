@@ -180,7 +180,7 @@ serve(async (req) => {
             "X-Title": "X Account Image Generator",
           },
           body: JSON.stringify({
-            model: "black-forest-labs/flux.2-pro",
+            model: "black-forest-labs/flux.2-flex",
             messages: [
               {
                 role: "user",
