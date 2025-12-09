@@ -13,24 +13,11 @@ const PREMIUM_IMAGE_MODEL = "google/gemini-2.5-flash-image";
 // Check if the current model is a Google model (for prompt enhancement)
 const isGoogleModel = (model: string): boolean => model.startsWith("google/");
 
-// Enhanced prompt wrapper for Google models - these models benefit from more detailed instructions
+// Light prompt wrapper for Google models - reinforces satirical cartoon style
 const enhancePromptForGoogleModels = (basePrompt: string): string => {
-  const enhancementInstructions = `You are an expert illustrator creating a satirical cartoon. Generate an image based on this description:
+  return `Create a satirical cartoon illustration in the style of MAD Magazine with bold outlines, vibrant colors, and exaggerated expressions:
 
-${basePrompt}
-
-CRITICAL ARTISTIC REQUIREMENTS:
-- COMPOSITION: Use a dynamic camera angle (low angle for power, Dutch angle for chaos, or dramatic perspective). Ensure the main subject is prominent with supporting details filling the space.
-- LIGHTING: Apply dramatic lighting that enhances the mood—consider rim lighting for drama, flat comic book lighting for pop art feel, or noir shadows for edge.
-- ACTION & ENERGY: The scene should feel alive with movement—use dynamic poses, action lines, flying debris, or motion blur effects.
-- RICH DETAILS: Pack the background with easter eggs, visual jokes, and symbolic objects that tell the story. Every corner should reward closer inspection.
-- EXAGGERATION: Push proportions, expressions, and reactions to cartoonish extremes. Subtlety is the enemy of great satire.
-- COLOR PALETTE: Use bold, vibrant colors with strong contrast. Consider complementary color schemes for visual impact.
-- STYLE CONSISTENCY: Maintain the specified art style throughout—thick outlines, halftone dots, or whatever the prompt specifies.
-
-Generate this as a single, cohesive satirical cartoon illustration.`;
-
-  return enhancementInstructions;
+${basePrompt}`;
 };
 
 // Create user identifier from IP + User-Agent for anonymous tracking
