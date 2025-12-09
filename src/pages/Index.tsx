@@ -19,6 +19,7 @@ import {
   Sparkle,
   ExternalLink,
   ChevronDown,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -98,14 +99,17 @@ const Index = () => {
   const [handle, setHandle] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRoasting, setIsRoasting] = useState(false);
+  const [isProfiling, setIsProfiling] = useState(false);
   const [inputError, setInputError] = useState("");
   const [globalError, setGlobalError] = useState("");
   const [loadingStage, setLoadingStage] = useState<"analyze" | "image" | null>(null);
   const [result, setResult] = useState<{ imagePrompt: string; imageUrl: string; username: string } | null>(null);
   const [roast, setRoast] = useState<string | null>(null);
+  const [fbiProfile, setFbiProfile] = useState<string | null>(null);
   const [donateOpen, setDonateOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isRoastCopied, setIsRoastCopied] = useState(false);
+  const [isProfileCopied, setIsProfileCopied] = useState(false);
   const [currentDonorIndex, setCurrentDonorIndex] = useState(0);
 
   const { history, addToHistory, deleteFromHistory, clearHistory } = usePromptHistory();
@@ -272,6 +276,43 @@ const Index = () => {
     }
   };
 
+  const handleFbiProfile = async () => {
+    const normalizedHandle = handle.trim().replace("@", "");
+
+    if (!normalizedHandle) {
+      setInputError("Enter an X username to get started.");
+      return;
+    }
+
+    setIsProfiling(true);
+    setInputError("");
+    setGlobalError("");
+    setFbiProfile(null);
+
+    try {
+      toast.info("Conducting behavioral analysis...");
+      const { data, error } = await supabase.functions.invoke(
+        "fbi-profile",
+        {
+          body: { handle: normalizedHandle },
+        }
+      );
+
+      if (error) throw error;
+      if (!data?.profileReport) throw new Error("Failed to generate FBI profile");
+
+      setFbiProfile(data.profileReport);
+      toast.success("FBI behavioral profile ready!");
+    } catch (err: unknown) {
+      console.error("FBI profile error:", err);
+      const message = err instanceof Error ? err.message : "Failed to generate FBI profile. Please try again.";
+      setGlobalError(message);
+      toast.error("Failed to generate FBI profile");
+    } finally {
+      setIsProfiling(false);
+    }
+  };
+
   const handleCopyPrompt = async () => {
     if (!result?.imagePrompt) return;
 
@@ -296,7 +337,7 @@ const Index = () => {
   };
 
   const isGenerateDisabled = isLoading;
-  const isBusy = isLoading || isRoasting;
+  const isBusy = isLoading || isRoasting || isProfiling;
 
   return (
     <SidebarProvider defaultOpen={false}>
@@ -444,6 +485,11 @@ const Index = () => {
                               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                               Crafting roast...
                             </>
+                          ) : isProfiling ? (
+                            <>
+                              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                              Profiling subject...
+                            </>
                           ) : (
                             <>
                               <Sparkles className="w-5 h-5 mr-2" />
@@ -453,7 +499,7 @@ const Index = () => {
                           )}
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48 bg-background border border-border shadow-lg z-50">
+                      <DropdownMenuContent align="end" className="w-56 bg-background border border-border shadow-lg z-50">
                         <DropdownMenuItem onClick={handleGenerate} disabled={isBusy} className="cursor-pointer">
                           <ImageIcon className="w-4 h-4 mr-2" />
                           Generate image
@@ -461,6 +507,10 @@ const Index = () => {
                         <DropdownMenuItem onClick={handleRoast} disabled={isBusy} className="cursor-pointer">
                           <Wand2 className="w-4 h-4 mr-2" />
                           Generate roast letter
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleFbiProfile} disabled={isBusy} className="cursor-pointer">
+                          <FileText className="w-4 h-4 mr-2" />
+                          FBI behavioral profile
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -710,6 +760,58 @@ const Index = () => {
                   </div>
                   <div className="rounded-xl border border-border/60 bg-white/60 p-4 text-sm leading-relaxed text-foreground whitespace-pre-wrap">
                     {roast}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {fbiProfile && (
+              <Card className="glass-card shadow-2xl animate-fade-in w-full border-slate-400/50">
+                <CardHeader className="bg-slate-100/50 rounded-t-xl">
+                  <div className="flex flex-col gap-2">
+                    <CardTitle className="flex items-center gap-2 text-foreground font-mono">
+                      <FileText className="w-5 h-5 text-slate-700" />
+                      FBI Behavioral Analysis Report
+                    </CardTitle>
+                    <CardDescription className="font-mono text-xs">
+                      CLASSIFIED • Subject: @{handle.trim().replace("@", "") || result?.username} • Behavioral Analysis Unit
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-4">
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={async () => {
+                        if (!fbiProfile) return;
+                        try {
+                          await navigator.clipboard.writeText(fbiProfile);
+                          setIsProfileCopied(true);
+                          toast.success("FBI profile copied!");
+                          setTimeout(() => setIsProfileCopied(false), 2000);
+                        } catch (error: unknown) {
+                          console.error("Profile copy error:", error);
+                          toast.error("Failed to copy profile");
+                        }
+                      }}
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-3"
+                    >
+                      {isProfileCopied ? (
+                        <>
+                          <Check className="w-4 h-4 mr-1 text-green-500" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-1" />
+                          Copy
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <div className="rounded-xl border border-slate-300/60 bg-slate-50/80 p-5 text-sm leading-relaxed text-foreground whitespace-pre-wrap font-mono">
+                    {fbiProfile}
                   </div>
                 </CardContent>
               </Card>
