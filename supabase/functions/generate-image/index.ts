@@ -7,30 +7,25 @@ const corsHeaders = {
 };
 
 // Premium image model (easy to change back if needed)
-// Previous: "google/gemini-2.5-flash-image"
-const PREMIUM_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
+// Previous: "google/gemini-3-pro-image-preview"
+const PREMIUM_IMAGE_MODEL = "google/gemini-2.5-flash-image";
 
 // Create user identifier from IP + User-Agent for anonymous tracking
 const getUserIdentifier = async (req: Request): Promise<string> => {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || 
-             req.headers.get("x-real-ip") || 
-             "unknown";
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
   const userAgent = req.headers.get("user-agent") || "unknown";
-  
+
   // Create hash to anonymize
   const encoder = new TextEncoder();
   const data = encoder.encode(ip + userAgent);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 };
 
 // Check usage and determine which model to use
 const checkUsageAndGetModel = async (identifier: string) => {
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   // Get or create usage record
   let { data: usage, error } = await supabase
@@ -40,8 +35,7 @@ const checkUsageAndGetModel = async (identifier: string) => {
     .maybeSingle();
 
   const now = new Date();
-  const resetNeeded = !usage || 
-    (now.getTime() - new Date(usage.last_reset_at).getTime()) > 24 * 60 * 60 * 1000;
+  const resetNeeded = !usage || now.getTime() - new Date(usage.last_reset_at).getTime() > 24 * 60 * 60 * 1000;
 
   if (!usage) {
     // Create new record
@@ -50,7 +44,7 @@ const checkUsageAndGetModel = async (identifier: string) => {
       .insert({
         user_identifier: identifier,
         premium_images_count: 0,
-        last_reset_at: now.toISOString()
+        last_reset_at: now.toISOString(),
       })
       .select()
       .maybeSingle();
@@ -62,7 +56,7 @@ const checkUsageAndGetModel = async (identifier: string) => {
       .update({
         premium_images_count: 0,
         last_reset_at: now.toISOString(),
-        updated_at: now.toISOString()
+        updated_at: now.toISOString(),
       })
       .eq("user_identifier", identifier)
       .select()
@@ -71,9 +65,11 @@ const checkUsageAndGetModel = async (identifier: string) => {
   }
 
   const usePremium = (usage?.premium_images_count || 0) < 2;
-  
-  console.log(`User identifier: ${identifier.substring(0, 8)}... | Premium count: ${usage?.premium_images_count || 0}/2 | Using: ${usePremium ? "Nano Banana (premium)" : "Flux (standard)"}`);
-  
+
+  console.log(
+    `User identifier: ${identifier.substring(0, 8)}... | Premium count: ${usage?.premium_images_count || 0}/2 | Using: ${usePremium ? "Nano Banana (premium)" : "Flux (standard)"}`,
+  );
+
   return { usePremium, usage, supabase };
 };
 
@@ -85,7 +81,7 @@ const generateWithFlux = async (prompt: string): Promise<string> => {
   }
 
   console.log("Using Flux Schnell model (GetImg.ai)");
-  
+
   const response = await fetch("https://api.getimg.ai/v1/flux-schnell/text-to-image", {
     method: "POST",
     headers: {
@@ -99,7 +95,7 @@ const generateWithFlux = async (prompt: string): Promise<string> => {
       height: 1024,
       steps: 4,
       output_format: "jpeg",
-      response_format: "url"
+      response_format: "url",
     }),
   });
 
@@ -111,15 +107,15 @@ const generateWithFlux = async (prompt: string): Promise<string> => {
 
   const data = await response.json();
   console.log("GetImg.ai response:", JSON.stringify(data));
-  
+
   // GetImg.ai returns base64 image in the "image" field
   const imageUrl = data.image || data.url || data.data?.[0]?.url;
-  
+
   if (!imageUrl) {
     console.error("No image in GetImg.ai response. Full data:", data);
     throw new Error("GetImg.ai did not return an image");
   }
-  
+
   console.log("Flux image generated successfully");
   return imageUrl;
 };
@@ -138,28 +134,28 @@ serve(async (req) => {
     if (!handle || !HANDLE_REGEX.test(handle)) {
       console.error("Invalid handle format:", handle);
       return new Response(
-        JSON.stringify({ error: "Invalid X handle format. Handles must be 1-15 characters and contain only letters, numbers, and underscores." }),
+        JSON.stringify({
+          error:
+            "Invalid X handle format. Handles must be 1-15 characters and contain only letters, numbers, and underscores.",
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
     if (!prompt) {
       console.error("Missing prompt");
-      return new Response(
-        JSON.stringify({ error: "Prompt is required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Prompt is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Get user identifier for rate limiting
     const userIdentifier = await getUserIdentifier(req);
-    
+
     // Check usage and determine model
     const { usePremium, usage, supabase } = await checkUsageAndGetModel(userIdentifier);
 
@@ -170,20 +166,14 @@ serve(async (req) => {
       const openrouterApiKey = Deno.env.get("OPENROUTER_API_KEY");
       if (!openrouterApiKey) {
         console.error("OPENROUTER_API_KEY is not configured");
-        return new Response(
-          JSON.stringify({ error: "OPENROUTER_API_KEY is not configured" }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+        return new Response(JSON.stringify({ error: "OPENROUTER_API_KEY is not configured" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       // Attempt premium image generation with retry logic
-      const attemptImageGeneration = async (
-        currentPrompt: string,
-        isRetry: boolean
-      ): Promise<string> => {
+      const attemptImageGeneration = async (currentPrompt: string, isRetry: boolean): Promise<string> => {
         console.log(`Attempting premium image generation (retry: ${isRetry})`);
         console.log(`Using premium model (OpenRouter): ${PREMIUM_IMAGE_MODEL}`);
         console.log("Using prompt:", currentPrompt);
@@ -228,20 +218,17 @@ serve(async (req) => {
           console.log("Safety block detected - regenerating prompt with safety guidelines");
 
           // Call analyze-account again with safety guidelines enabled
-          const analyzeResponse = await fetch(
-            `${Deno.env.get("SUPABASE_URL")}/functions/v1/analyze-account`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                handle: handle,
-                useSafetyGuidelines: true,
-              }),
-            }
-          );
+          const analyzeResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/analyze-account`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              handle: handle,
+              useSafetyGuidelines: true,
+            }),
+          });
 
           if (!analyzeResponse.ok) {
             console.error("Failed to regenerate prompt");
@@ -273,7 +260,7 @@ serve(async (req) => {
         .from("usage_tracking")
         .update({
           premium_images_count: (usage?.premium_images_count || 0) + 1,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq("user_identifier", userIdentifier);
 
@@ -296,7 +283,7 @@ serve(async (req) => {
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      },
     );
   }
 });
