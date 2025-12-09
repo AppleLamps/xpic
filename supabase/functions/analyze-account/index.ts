@@ -53,7 +53,7 @@ serve(async (req) => {
     }
 
     // Cache lookup (only if caching is enabled)
-    let cachedData: { search_response: any } | null = null;
+    let cachedData: { search_response: unknown } | null = null;
     if (ENABLE_CACHING && supabase) {
       const { data, error: cacheError } = await supabase
         .from('x_account_cache')
@@ -65,7 +65,7 @@ serve(async (req) => {
       if (cacheError) {
         console.error("Cache lookup error:", cacheError);
       } else {
-        cachedData = data;
+        cachedData = data as { search_response: unknown } | null;
       }
     }
 
@@ -207,7 +207,8 @@ Your final output must be ONLY the image generation prompt. No preamble, no expl
       // Cache the response if caching is enabled
       if (ENABLE_CACHING && supabase) {
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-        const { error: upsertError } = await supabase
+        // deno-lint-ignore no-explicit-any
+        const { error: upsertError } = await (supabase as any)
           .from('x_account_cache')
           .upsert({
             x_handle: handle.toLowerCase(),
