@@ -18,10 +18,12 @@ serve(async (req) => {
   try {
     const { handle, useSafetyGuidelines } = await req.json();
 
-    if (!handle) {
-      console.error("No handle provided");
+    // Validate X handle format (1-15 alphanumeric characters + underscores)
+    const HANDLE_REGEX = /^[a-zA-Z0-9_]{1,15}$/;
+    if (!handle || !HANDLE_REGEX.test(handle)) {
+      console.error("Invalid handle format:", handle);
       return new Response(
-        JSON.stringify({ error: "X handle is required" }),
+        JSON.stringify({ error: "Invalid X handle format. Handles must be 1-15 characters and contain only letters, numbers, and underscores." }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

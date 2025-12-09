@@ -133,22 +133,35 @@ serve(async (req) => {
   try {
     const { prompt, handle } = await req.json();
 
-    // Get user identifier for rate limiting
-    const userIdentifier = await getUserIdentifier(req);
-    
-    // Check usage and determine model
-    const { usePremium, usage, supabase } = await checkUsageAndGetModel(userIdentifier);
-
-    if (!prompt || !handle) {
-      console.error("Missing required parameters");
+    // Validate X handle format (1-15 alphanumeric characters + underscores)
+    const HANDLE_REGEX = /^[a-zA-Z0-9_]{1,15}$/;
+    if (!handle || !HANDLE_REGEX.test(handle)) {
+      console.error("Invalid handle format:", handle);
       return new Response(
-        JSON.stringify({ error: "Both prompt and handle are required" }),
+        JSON.stringify({ error: "Invalid X handle format. Handles must be 1-15 characters and contain only letters, numbers, and underscores." }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
+
+    if (!prompt) {
+      console.error("Missing prompt");
+      return new Response(
+        JSON.stringify({ error: "Prompt is required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get user identifier for rate limiting
+    const userIdentifier = await getUserIdentifier(req);
+    
+    // Check usage and determine model
+    const { usePremium, usage, supabase } = await checkUsageAndGetModel(userIdentifier);
 
     let imageUrl: string;
 

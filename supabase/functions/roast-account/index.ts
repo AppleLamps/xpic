@@ -40,11 +40,17 @@ serve(async (req) => {
   try {
     const { handle } = await req.json();
 
-    if (!handle) {
-      return new Response(JSON.stringify({ error: "handle is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Validate X handle format (1-15 alphanumeric characters + underscores)
+    const HANDLE_REGEX = /^[a-zA-Z0-9_]{1,15}$/;
+    if (!handle || !HANDLE_REGEX.test(handle)) {
+      console.error("Invalid handle format:", handle);
+      return new Response(
+        JSON.stringify({ error: "Invalid X handle format. Handles must be 1-15 characters and contain only letters, numbers, and underscores." }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const xaiApiKey = Deno.env.get("XAI_API_KEY");
