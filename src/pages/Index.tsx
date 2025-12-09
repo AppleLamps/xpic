@@ -18,6 +18,7 @@ import {
   Search,
   Sparkle,
   ExternalLink,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +29,12 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -420,24 +427,43 @@ const Index = () => {
                         spellCheck={false}
                       />
                     </div>
-                    <Button
-                      onClick={handleGenerate}
-                      disabled={isGenerateDisabled || isRoasting}
-                      size="lg"
-                      className="bg-gradient-to-r from-slate-700 to-slate-600 text-white font-semibold hover:from-slate-600 hover:to-slate-500 hover:scale-[1.02] hover:shadow-xl transition-all duration-300 shadow-lg w-full sm:w-auto sm:min-w-[180px]"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                          Working...
-                        </>
-                      ) : (
-                        <>
-                          <ImageIcon className="w-5 h-5 mr-2" />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          disabled={isBusy}
+                          size="lg"
+                          className="bg-gradient-to-r from-slate-700 to-slate-600 text-white font-semibold hover:from-slate-600 hover:to-slate-500 hover:scale-[1.02] hover:shadow-xl transition-all duration-300 shadow-lg w-full sm:w-auto sm:min-w-[180px]"
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                              Generating image...
+                            </>
+                          ) : isRoasting ? (
+                            <>
+                              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                              Crafting roast...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-5 h-5 mr-2" />
+                              Generate
+                              <ChevronDown className="w-4 h-4 ml-2" />
+                            </>
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 bg-background border border-border shadow-lg z-50">
+                        <DropdownMenuItem onClick={handleGenerate} disabled={isBusy} className="cursor-pointer">
+                          <ImageIcon className="w-4 h-4 mr-2" />
                           Generate image
-                        </>
-                      )}
-                    </Button>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleRoast} disabled={isBusy} className="cursor-pointer">
+                          <Wand2 className="w-4 h-4 mr-2" />
+                          Generate roast letter
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                   {inputError && (
                     <p className="text-sm text-destructive flex items-center gap-2">
@@ -466,27 +492,6 @@ const Index = () => {
                   ))}
                 </div>
 
-                <div className="flex items-center justify-center">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="gap-2"
-                    onClick={handleRoast}
-                    disabled={isBusy}
-                  >
-                    {isRoasting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                        Crafting roast letter...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-4 h-4" />
-                        Generate roast letter
-                      </>
-                    )}
-                  </Button>
-                </div>
 
                 <div className="flex items-center justify-center pt-2">
                   <div className="inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-border/80 bg-white/80 px-5 py-2 text-[0.75rem] sm:text-sm text-muted-foreground shadow-sm">
