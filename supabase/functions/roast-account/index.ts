@@ -72,7 +72,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "grok-4-1-fast",
+        model: "grok-3-latest",
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -80,11 +80,12 @@ serve(async (req) => {
             content: `Analyze @${handle}'s posts and write the roast letter as described.`,
           },
         ],
-        tools: [
-          {
-            type: "live_search",
-          },
-        ],
+        search_parameters: {
+          mode: "on",
+          sources: [{ type: "x" }],
+          from_date: fromDate,
+          to_date: toDate,
+        },
       }),
     });
 

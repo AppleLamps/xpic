@@ -165,7 +165,7 @@ Your final output must be ONLY the image generation prompt. No preamble, no expl
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "grok-4-1-fast",
+          model: "grok-3-latest",
           messages: [
             { role: "system", content: systemPrompt },
             {
@@ -173,11 +173,12 @@ Your final output must be ONLY the image generation prompt. No preamble, no expl
               content: `Analyze @${handle}'s posts and create a humorous but relevant image generation prompt that captures their account's essence.`,
             },
           ],
-          tools: [
-            {
-              type: "live_search",
-            },
-          ],
+          search_parameters: {
+            mode: "on",
+            sources: [{ type: "x" }],
+            from_date: fromDate,
+            to_date: toDate,
+          },
         }),
       });
 
