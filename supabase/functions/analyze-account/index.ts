@@ -127,12 +127,23 @@ Your final output must be ONLY the image generation prompt. No preamble, no expl
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          // ⚠️ DO NOT CHANGE THIS MODEL - grok-4-1-fast is required for X search functionality
           model: "grok-4-1-fast",
           messages: [
             { role: "system", content: systemPrompt },
             {
               role: "user",
-              content: `Based on this X account data: ${cachedContext}\n\nCreate a humorous but relevant image generation prompt that captures the account's essence.`,
+              content: `Based on this X account data: ${cachedContext}
+
+Extract and synthesize:
+- Content themes & obsessions
+- Personality (sarcastic, earnest, chaotic, professional?)
+- Signature behaviors & contradictions
+- Visual patterns & aesthetic preferences
+- Cringe moments & genuinely good takes
+- Catchphrases, emoji habits, timing patterns
+
+Then create a masterful image generation prompt capturing their SPECIFIC essence—details that would make them think "how did they know that about me?"`,
             },
           ],
           // No tools - we're using cached data
@@ -167,12 +178,27 @@ Your final output must be ONLY the image generation prompt. No preamble, no expl
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "grok-3-latest",
+          // ⚠️ DO NOT CHANGE THIS MODEL - grok-4-1-fast is required for X search functionality
+          model: "grok-4-1-fast",
           messages: [
             { role: "system", content: systemPrompt },
             {
               role: "user",
-              content: `Analyze @${handle}'s posts and create a humorous but relevant image generation prompt that captures their account's essence.`,
+              content: `Perform a deep analysis of @${handle}'s X account. 
+
+GATHER THIS INTELLIGENCE:
+1. **Content Themes**: What topics dominate their feed? (tech, politics, memes, fitness, crypto, etc.)
+2. **Personality Markers**: Are they sarcastic, earnest, chaotic, professional, unhinged, wholesome?
+3. **Signature Behaviors**: Reply guy tendencies? Quote-tweet warrior? Thread addict? Ratio collector?
+4. **Visual Patterns**: What images/videos do they share? Any aesthetic preferences?
+5. **Cringe & Gold**: Their most eye-roll-worthy takes AND their genuinely good posts
+6. **Contradictions**: Do they preach one thing but post another? (e.g., "touch grass" poster who tweets 50x/day)
+7. **Obsessions**: Topics they return to repeatedly, accounts they interact with most
+8. **Timing Patterns**: Late-night poster? Morning grinder? Weekend warrior?
+9. **Bio & Profile**: What does their bio claim vs what their posts reveal?
+10. **Catchphrases**: Any repeated phrases, emoji habits, or signature sign-offs?
+
+Then synthesize these findings into a single, masterful image generation prompt that captures their SPECIFIC essence—not generic vibes, but details that would make them think "how did they know that about me?"`,
             },
           ],
           search_parameters: {

@@ -7,8 +7,31 @@ const corsHeaders = {
 };
 
 // Premium image model (easy to change back if needed)
-// Previous: "google/gemini-3-pro-image-preview"
+// Supported Google models: "google/gemini-2.5-flash-image", "google/gemini-3-pro-image-preview"
 const PREMIUM_IMAGE_MODEL = "google/gemini-2.5-flash-image";
+
+// Check if the current model is a Google model (for prompt enhancement)
+const isGoogleModel = (model: string): boolean => model.startsWith("google/");
+
+// Enhanced prompt wrapper for Google models - these models benefit from more detailed instructions
+const enhancePromptForGoogleModels = (basePrompt: string): string => {
+  const enhancementInstructions = `You are an expert illustrator creating a satirical cartoon. Generate an image based on this description:
+
+${basePrompt}
+
+CRITICAL ARTISTIC REQUIREMENTS:
+- COMPOSITION: Use a dynamic camera angle (low angle for power, Dutch angle for chaos, or dramatic perspective). Ensure the main subject is prominent with supporting details filling the space.
+- LIGHTING: Apply dramatic lighting that enhances the mood—consider rim lighting for drama, flat comic book lighting for pop art feel, or noir shadows for edge.
+- ACTION & ENERGY: The scene should feel alive with movement—use dynamic poses, action lines, flying debris, or motion blur effects.
+- RICH DETAILS: Pack the background with easter eggs, visual jokes, and symbolic objects that tell the story. Every corner should reward closer inspection.
+- EXAGGERATION: Push proportions, expressions, and reactions to cartoonish extremes. Subtlety is the enemy of great satire.
+- COLOR PALETTE: Use bold, vibrant colors with strong contrast. Consider complementary color schemes for visual impact.
+- STYLE CONSISTENCY: Maintain the specified art style throughout—thick outlines, halftone dots, or whatever the prompt specifies.
+
+Generate this as a single, cohesive satirical cartoon illustration.`;
+
+  return enhancementInstructions;
+};
 
 // Create user identifier from IP + User-Agent for anonymous tracking
 const getUserIdentifier = async (req: Request): Promise<string> => {
@@ -176,7 +199,14 @@ serve(async (req) => {
       const attemptImageGeneration = async (currentPrompt: string, isRetry: boolean): Promise<string> => {
         console.log(`Attempting premium image generation (retry: ${isRetry})`);
         console.log(`Using premium model (OpenRouter): ${PREMIUM_IMAGE_MODEL}`);
-        console.log("Using prompt:", currentPrompt);
+        
+        // Enhance the prompt for Google models - they benefit from more detailed instructions
+        // Works with: google/gemini-2.5-flash-image, google/gemini-3-pro-image-preview, etc.
+        const finalPrompt = isGoogleModel(PREMIUM_IMAGE_MODEL) 
+          ? enhancePromptForGoogleModels(currentPrompt)
+          : currentPrompt;
+        
+        console.log(`Using ${isGoogleModel(PREMIUM_IMAGE_MODEL) ? "enhanced" : "standard"} prompt:`, finalPrompt);
 
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
@@ -191,7 +221,7 @@ serve(async (req) => {
             messages: [
               {
                 role: "user",
-                content: currentPrompt,
+                content: finalPrompt,
               },
             ],
             modalities: ["image", "text"],

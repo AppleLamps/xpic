@@ -127,7 +127,8 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "grok-3-latest",
+        // ⚠️ DO NOT CHANGE THIS MODEL - grok-4-1-fast is required for X search functionality
+        model: "grok-4-1-fast",
         messages: [
           { role: "system", content: systemPrompt },
           {
