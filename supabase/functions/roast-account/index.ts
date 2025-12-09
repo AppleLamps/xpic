@@ -82,12 +82,7 @@ serve(async (req) => {
         ],
         tools: [
           {
-            type: "x_search",
-            allowed_x_handles: [handle],
-            from_date: fromDate,
-            to_date: toDate,
-            enable_image_understanding: true,
-            enable_video_understanding: true,
+            type: "live_search",
           },
         ],
       }),
