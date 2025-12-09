@@ -669,10 +669,10 @@ const Index = () => {
                   <div className="flex flex-col gap-2">
                     <CardTitle className="flex items-center gap-2 text-foreground">
                       <Wand2 className="w-5 h-5 text-primary" />
-                      Comedy Central roast (therapist letter)
+                      Roast Letter from Dr. Burn Notice
                     </CardTitle>
                     <CardDescription>
-                      A playful, PG-13 roast written as a mock therapy note for @{handle.trim().replace("@", "") || result?.username}
+                      A brutally honest therapy note for @{handle.trim().replace("@", "") || result?.username}
                     </CardDescription>
                   </div>
                 </CardHeader>
