@@ -6,6 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Premium image model (easy to change back if needed)
+// Previous: "google/gemini-2.5-flash-image"
+const PREMIUM_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
+
 // Create user identifier from IP + User-Agent for anonymous tracking
 const getUserIdentifier = async (req: Request): Promise<string> => {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || 
@@ -168,7 +172,7 @@ serve(async (req) => {
         isRetry: boolean
       ): Promise<string> => {
         console.log(`Attempting premium image generation (retry: ${isRetry})`);
-        console.log("Using Nano Banana model (OpenRouter)");
+        console.log(`Using premium model (OpenRouter): ${PREMIUM_IMAGE_MODEL}`);
         console.log("Using prompt:", currentPrompt);
 
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -180,7 +184,7 @@ serve(async (req) => {
             "X-Title": "X Account Image Generator",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image",
+            model: PREMIUM_IMAGE_MODEL,
             messages: [
               {
                 role: "user",

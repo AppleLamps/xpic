@@ -90,12 +90,15 @@ const HOW_IT_WORKS: Array<{
 const Index = () => {
   const [handle, setHandle] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRoasting, setIsRoasting] = useState(false);
   const [inputError, setInputError] = useState("");
   const [globalError, setGlobalError] = useState("");
   const [loadingStage, setLoadingStage] = useState<"analyze" | "image" | null>(null);
   const [result, setResult] = useState<{ imagePrompt: string; imageUrl: string; username: string } | null>(null);
+  const [roast, setRoast] = useState<string | null>(null);
   const [donateOpen, setDonateOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [isRoastCopied, setIsRoastCopied] = useState(false);
   const [currentDonorIndex, setCurrentDonorIndex] = useState(0);
 
   const { history, addToHistory, deleteFromHistory, clearHistory } = usePromptHistory();
@@ -146,6 +149,7 @@ const Index = () => {
     setInputError("");
     setGlobalError("");
     setResult(null);
+    setRoast(null);
     setLoadingStage("analyze");
 
     try {
@@ -224,6 +228,43 @@ const Index = () => {
     }
   };
 
+  const handleRoast = async () => {
+    const normalizedHandle = handle.trim().replace("@", "");
+
+    if (!normalizedHandle) {
+      setInputError("Enter an X username to get started.");
+      return;
+    }
+
+    setIsRoasting(true);
+    setInputError("");
+    setGlobalError("");
+    setRoast(null);
+
+    try {
+      toast.info("Analyzing for roast...");
+      const { data, error } = await supabase.functions.invoke(
+        "roast-account",
+        {
+          body: { handle: normalizedHandle },
+        }
+      );
+
+      if (error) throw error;
+      if (!data?.roastLetter) throw new Error("Failed to generate roast letter");
+
+      setRoast(data.roastLetter);
+      toast.success("Roast letter ready!");
+    } catch (err: unknown) {
+      console.error("Roast error:", err);
+      const message = err instanceof Error ? err.message : "Failed to generate roast. Please try again.";
+      setGlobalError(message);
+      toast.error("Failed to generate roast");
+    } finally {
+      setIsRoasting(false);
+    }
+  };
+
   const handleCopyPrompt = async () => {
     if (!result?.imagePrompt) return;
 
@@ -248,6 +289,7 @@ const Index = () => {
   };
 
   const isGenerateDisabled = isLoading;
+  const isBusy = isLoading || isRoasting;
 
   return (
     <SidebarProvider defaultOpen={false}>
@@ -371,8 +413,8 @@ const Index = () => {
                           setHandle(e.target.value);
                           if (inputError) setInputError("");
                         }}
-                        onKeyDown={(e) => e.key === "Enter" && !isGenerateDisabled && handleGenerate()}
-                        disabled={isLoading}
+                        onKeyDown={(e) => e.key === "Enter" && !isBusy && handleGenerate()}
+                        disabled={isBusy}
                         className="pl-8 text-base"
                         autoComplete="off"
                         spellCheck={false}
@@ -380,7 +422,7 @@ const Index = () => {
                     </div>
                     <Button
                       onClick={handleGenerate}
-                      disabled={isGenerateDisabled}
+                      disabled={isGenerateDisabled || isRoasting}
                       size="lg"
                       className="bg-gradient-to-r from-slate-700 to-slate-600 text-white font-semibold hover:from-slate-600 hover:to-slate-500 hover:scale-[1.02] hover:shadow-xl transition-all duration-300 shadow-lg w-full sm:w-auto sm:min-w-[180px]"
                     >
@@ -416,12 +458,34 @@ const Index = () => {
                       variant="outline"
                       size="sm"
                       className="rounded-full px-3"
-                      disabled={isLoading}
+                      disabled={isBusy}
                       onClick={() => handleSuggestionClick(suggestion)}
                     >
                       @{suggestion}
                     </Button>
                   ))}
+                </div>
+
+                <div className="flex items-center justify-center">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="gap-2"
+                    onClick={handleRoast}
+                    disabled={isBusy}
+                  >
+                    {isRoasting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        Crafting roast letter...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4" />
+                        Generate roast letter
+                      </>
+                    )}
+                  </Button>
                 </div>
 
                 <div className="flex items-center justify-center pt-2">
@@ -589,6 +653,58 @@ const Index = () => {
                         Generate another
                       </Button>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {roast && (
+              <Card className="glass-card shadow-2xl animate-fade-in w-full">
+                <CardHeader>
+                  <div className="flex flex-col gap-2">
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                      <Wand2 className="w-5 h-5 text-primary" />
+                      Comedy Central roast (therapist letter)
+                    </CardTitle>
+                    <CardDescription>
+                      A playful, PG-13 roast written as a mock therapy note for @{handle.trim().replace("@", "") || result?.username}
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={async () => {
+                        if (!roast) return;
+                        try {
+                          await navigator.clipboard.writeText(roast);
+                          setIsRoastCopied(true);
+                          toast.success("Roast letter copied!");
+                          setTimeout(() => setIsRoastCopied(false), 2000);
+                        } catch (error: unknown) {
+                          console.error("Roast copy error:", error);
+                          toast.error("Failed to copy roast");
+                        }
+                      }}
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-3"
+                    >
+                      {isRoastCopied ? (
+                        <>
+                          <Check className="w-4 h-4 mr-1 text-green-500" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-1" />
+                          Copy
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <div className="rounded-xl border border-border/60 bg-white/60 p-4 text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+                    {roast}
                   </div>
                 </CardContent>
               </Card>
